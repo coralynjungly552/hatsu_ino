@@ -80,6 +80,8 @@ When your car's ignition turns on, hatsu_ino detects the power-up and plays a WA
    └──────────────────────────────┘
 ```
 
+> The diagram above shows **Option A** (12V → LM2596 → 5V rail). For **Option B**, omit the LM2596 and connect your switched 5V source directly to the 5V rail.
+
 ---
 
 ### Before you start — choose your power source
@@ -283,4 +285,3 @@ Validates the same logic running on the actual Nano using [AUnit](https://github
 2. Upload to the Nano
 3. Open Serial Monitor at **115200 baud**
 4. Results print automatically — all tests should show `PASSED`
-
