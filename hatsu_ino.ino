@@ -64,7 +64,7 @@ void pickRandomWav(char* trackName) {
     if (!entry) break;
     if (!entry.isDirectory() && isWav(entry.name())) {
       wavFilesScanned++;
-      if (random(wavFilesScanned) == 0) {
+      if (reservoirShouldReplace(wavFilesScanned, random)) {
         strncpy(trackName, entry.name(), TRACK_NAME_LEN - 1);
         trackName[TRACK_NAME_LEN - 1] = '\0';
       }

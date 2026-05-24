@@ -195,7 +195,24 @@ ffmpeg -i input.mp3 -ar 16000 -ac 1 -acodec pcm_u8 MELODY.WAV
 
 ## Testing
 
-Unit tests cover the `isWav()` filename validation logic using [AUnit](https://github.com/bxparks/AUnit).
+There are two test suites:
+
+### Native tests (CI)
+
+Tests for all pure logic (`isWav()`, reservoir sampling) compiled and run on the host with [Catch2](https://github.com/catchorg/Catch2). These run automatically on every push via GitHub Actions.
+
+To run locally:
+```bash
+cmake -S test/native -B test/native/build
+cmake --build test/native/build
+./test/native/build/tests
+```
+
+Requires CMake ≥ 3.14 and a C++17 compiler. Catch2 is fetched automatically.
+
+### On-hardware tests (AUnit)
+
+Validates the same logic running on the actual Nano using [AUnit](https://github.com/bxparks/AUnit).
 
 **Install AUnit:** Arduino IDE → Library Manager → search `AUnit` → install.
 
