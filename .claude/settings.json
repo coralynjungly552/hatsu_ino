@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq '{hookSpecificOutput: {hookEventName: \"PostToolUse\", additionalContext: (\"Edited: \" + (.tool_input.file_path // \"a file\") + \". Review README.md and check if it needs updating to reflect this change.\")}}'"
+          }
+        ]
+      }
+    ]
+  }
+}
