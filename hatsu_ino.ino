@@ -22,6 +22,8 @@ const unsigned long BLINK_PAUSE_MS    = 800;
 
 TMRpcm player;
 
+void haltWithErrorCode(ErrorCode code) __attribute__((noreturn));
+
 void setup() {
   initStatusLed();
   seedRandom();
