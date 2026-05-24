@@ -13,15 +13,15 @@ When your car's ignition turns on, hatsu_ino detects the power-up and plays a WA
 
 ## Components
 
-| Component | Description | Link |
-|---|---|---|
-| Arduino Nano Compatible V3 ATmega328 CH340 | Main microcontroller | [Mercado Livre](https://www.mercadolivre.com.br/arduino-nano-compativel-v3-atmega328-ch340-com/p/MLB38280753) |
-| Micro SD Card Reader Module for Arduino | Reads WAV files via SPI | [Mercado Livre](https://www.mercadolivre.com.br/modulo-leitor-carto-micro-sd-card-leituraescrita-p-arduino/p/MLB2039725040) |
-| PAM8403 Mini Digital Amplifier 2x3W 5V (pack of 3) | Drives the speaker | [Mercado Livre](https://www.mercadolivre.com.br/3x-amplificador-mini-digital-2x3w-5v-pam8403/up/MLBU1717645519) |
-| Mini Speaker 0.5W 8Ω 40mm (pack of 2) | Audio output | [Mercado Livre](https://www.mercadolivre.com.br/2-x-mini-alto-falante-05w-8-ohms-8r-40mm-para-arduino-esp/up/MLBU1436328953) |
-| LM2596 Adjustable Step-Down Buck Converter 3A | Steps 12V car power down to 5V efficiently | [Mercado Livre](https://www.mercadolivre.com.br/regulador-de-tenso-ajustavel-lm2596-step-down-3a-qualidade/p/MLB34351875) |
-| Electrolytic Capacitor 10µF 50V 105°C (pack of 100) | Audio coupling between D9 and PAM8403 IN+ | [Mercado Livre](https://www.mercadolivre.com.br/capacitor-eletrolitico-10f-50v-econd-105c-100-pecas-5x11mm/p/MLB49758637) |
-| Micro SD card | Stores WAV files (FAT32 formatted) | — |
+| Component | Description | Code | Link |
+|---|---|---|---|
+| Arduino Nano Compatible V3 ATmega328 CH340 | Main microcontroller | MLB38280753 | [Mercado Livre](https://www.mercadolivre.com.br/arduino-nano-compativel-v3-atmega328-ch340-com/p/MLB38280753) |
+| Micro SD Card Reader Module for Arduino | Reads WAV files via SPI | MLB2039725040 | [Mercado Livre](https://www.mercadolivre.com.br/modulo-leitor-carto-micro-sd-card-leituraescrita-p-arduino/p/MLB2039725040) |
+| PAM8403 Mini Digital Amplifier 2x3W 5V (pack of 3) | Drives the speaker | MLBU1717645519 | [Mercado Livre](https://www.mercadolivre.com.br/3x-amplificador-mini-digital-2x3w-5v-pam8403/up/MLBU1717645519) |
+| Mini Speaker 0.5W 8Ω 40mm (pack of 2) | Audio output | MLBU1436328953 | [Mercado Livre](https://www.mercadolivre.com.br/2-x-mini-alto-falante-05w-8-ohms-8r-40mm-para-arduino-esp/up/MLBU1436328953) |
+| LM2596 Adjustable Step-Down Buck Converter 3A | Steps 12V car power down to 5V efficiently | MLB34351875 | [Mercado Livre](https://www.mercadolivre.com.br/regulador-de-tenso-ajustavel-lm2596-step-down-3a-qualidade/p/MLB34351875) |
+| Electrolytic Capacitor 10µF 50V 105°C (pack of 100) | Audio coupling between D9 and PAM8403 IN+ | MLB49758637 | [Mercado Livre](https://www.mercadolivre.com.br/capacitor-eletrolitico-10f-50v-econd-105c-100-pecas-5x11mm/p/MLB49758637) |
+| Micro SD card | Stores WAV files (FAT32 formatted) | — | — |
 
 ### Extra parts needed
 
