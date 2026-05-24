@@ -7,6 +7,10 @@
           {
             "type": "command",
             "command": "jq '{hookSpecificOutput: {hookEventName: \"PostToolUse\", additionalContext: (\"Edited: \" + (.tool_input.file_path // \"a file\") + \". Review README.md and check if it needs updating to reflect this change.\")}}'"
+          },
+          {
+            "type": "command",
+            "command": "bash -c '[ -d test/native/build ] || cmake -S test/native -B test/native/build 2>&1; cmake --build test/native/build 2>&1 && ./test/native/build/tests 2>&1' | jq -Rs '{hookSpecificOutput: {hookEventName: \"PostToolUse\", additionalContext: (\"Test results after edit:\\n\" + .)}}'"
           }
         ]
       }
