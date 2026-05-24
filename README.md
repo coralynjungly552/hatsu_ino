@@ -22,7 +22,7 @@ When your car's ignition turns on, hatsu_ino detects the power-up and plays a WA
 | PAM8403 Mini Digital Amplifier 2x3W 5V (pack of 3) | Drives the speaker | PAM8403 |
 | Mini Speaker 0.5W 8Ω 40mm (pack of 2) | Audio output | — |
 | LM2596 Adjustable Step-Down Buck Converter 3A | Steps 12V car power down to 5V *(optional — only needed if powering from the 12V car line)* | LM2596 |
-| Electrolytic Capacitor 10µF 50V 105°C (pack of 100) | Audio coupling between D9 and PAM8403 IN+ | — |
+| Electrolytic Capacitor 10µF 50V 105°C (pack of 100) | Audio coupling between D9 and PAM8403 IN+ *(1 required)* | — |
 | Micro SD card | Stores WAV files (FAT32 formatted) | — |
 
 ### Extra parts needed
@@ -31,6 +31,8 @@ When your car's ignition turns on, hatsu_ino detects the power-up and plays a WA
 |---|---|
 | Jumper wires / proto board | Connecting components |
 | Soldering iron | For permanent connections |
+| USB Type-A to Mini-B cable | Uploading firmware to the Nano |
+| Car wiring tap or splice connector | Connecting to the ignition-switched power line |
 | Patience and time | Required in generous amounts |
 
 ## How it works
