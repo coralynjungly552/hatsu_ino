@@ -1,0 +1,10 @@
+# CMake build output
+test/native/build/
+
+# Arduino IDE build artifacts
+build/
+*.o
+*.d
+*.elf
+*.hex
+*.map
