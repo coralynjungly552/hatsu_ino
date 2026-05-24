@@ -3,6 +3,8 @@
 [![Static Analysis](https://github.com/ArturVRSampaio/hatsu_ino/actions/workflows/cppcheck.yml/badge.svg)](https://github.com/ArturVRSampaio/hatsu_ino/actions/workflows/cppcheck.yml)
 [![Unit Tests](https://github.com/ArturVRSampaio/hatsu_ino/actions/workflows/native-tests.yml/badge.svg)](https://github.com/ArturVRSampaio/hatsu_ino/actions/workflows/native-tests.yml)
 
+> ⚠️ **Work in progress — not yet validated on real hardware.**
+
 > **hatsu** (初, first sound) + **ino** (Arduino) — the first sound your car makes.
 
 A JDM car melody box that plays a WAV audio file when you start your car.
@@ -149,7 +151,7 @@ The 10µF capacitor sits between D9 and the amplifier to block the DC offset fro
 | SPI MOSI | Nano D11 | SD MOSI |
 | SPI MISO | Nano D12 | SD MISO |
 | SPI SCK | Nano D13 | SD SCK |
-| Audio | Nano D9 → 10µF cap → PAM8403 L_IN+ | |
+| Audio | Nano D9 | 10µF cap (+) → cap (−) → PAM8403 L_IN+ |
 | Audio GND | Nano GND | PAM8403 L_IN− |
 | Speaker | PAM8403 L_OUT+ / L_OUT− | Speaker + / − |
 
@@ -168,7 +170,7 @@ The Nano clone listed in the components uses a **CH340** USB chip instead of the
 
 ### 3 — Install the TMRpcm library
 
-Arduino IDE → **Sketch → Include Library → Manage Libraries** → search `TMRpcm` → install.
+Arduino IDE → **Sketch → Include Library → Manage Libraries** → search [`TMRpcm`](https://github.com/TMRh20/TMRpcm) → install.
 
 ### 4 — Open the sketch
 
@@ -196,7 +198,7 @@ Click **Upload** (→ arrow button). The IDE will compile and flash the sketch. 
 
 **Maximum size: 32GB.** Cards larger than 32GB (SDXC) use exFAT by default, which the Arduino SD library does not support. Any card ≤32GB formatted as FAT32 will work — a 4GB or 8GB card is more than enough. At 16kHz 8-bit mono, a WAV file is ~1MB per minute of audio.
 
-## SD card setup
+### Setup
 
 1. Format the SD card as FAT32
 2. Copy any `.wav` files to the root directory — a random one will be picked each time the car starts
@@ -262,10 +264,3 @@ Validates the same logic running on the actual Nano using [AUnit](https://github
 3. Open Serial Monitor at **115200 baud**
 4. Results print automatically — all tests should show `PASSED`
 
-## Dependencies
-
-- [TMRpcm](https://github.com/TMRh20/TMRpcm) — install via Arduino Library Manager or manually
-
-## Project status
-
-Work in progress.
