@@ -25,11 +25,11 @@ When your car's ignition turns on, hatsu_ino detects the power-up and plays a WA
 
 ### Extra parts needed
 
-| Component | Description | Link |
-|---|---|---|
-| Jumper wires / proto board | Connecting components | — |
-| Soldering iron | For permanent connections | — |
-| Patience and time | Required in generous amounts | — |
+| Component | Description |
+|---|---|
+| Jumper wires / proto board | Connecting components |
+| Soldering iron | For permanent connections |
+| Patience and time | Required in generous amounts |
 
 ## How it works
 
