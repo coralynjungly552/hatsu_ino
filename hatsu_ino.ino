@@ -8,7 +8,7 @@
 const uint8_t SD_CS_PIN              = 4;
 const uint8_t SPEAKER_PIN            = 9;
 const uint8_t VOLUME                 = 6;    // 0 (silent) to 7 (max)
-const uint8_t NOISE_PIN              = A0;   // intentionally unconnected — reads electrical noise for random seed
+const int NOISE_PIN                  = A0;   // intentionally unconnected — reads electrical noise for random seed
 const unsigned long PLAYBACK_START_DELAY_MS = 100;
 
 enum ErrorCode {
@@ -70,7 +70,6 @@ void pickRandomWav(char* trackName) {
     entry.close();
   }
   rootDir.close();
-
   if (wavFilesScanned == 0) haltWithErrorCode(NO_WAV_FILES);
 }
 
