@@ -9,7 +9,6 @@ const uint8_t SD_CS_PIN              = 4;
 const uint8_t SPEAKER_PIN            = 9;
 const uint8_t VOLUME                 = 6;    // 0 (silent) to 7 (max)
 const int NOISE_PIN                  = A0;   // intentionally unconnected — reads electrical noise for random seed
-const unsigned long PLAYBACK_START_DELAY_MS = 100;
 
 enum ErrorCode {
   SD_INIT_FAILED  = 2,
@@ -21,6 +20,7 @@ const unsigned long BLINK_DURATION_MS = 200;
 const unsigned long BLINK_PAUSE_MS    = 800;
 
 TMRpcm player;
+bool playbackObserved = false;
 
 void haltWithErrorCode(ErrorCode code) __attribute__((noreturn));
 
@@ -32,14 +32,11 @@ void setup() {
   char trackName[TRACK_NAME_LEN];
   pickRandomWav(trackName);
   configureAndPlay(trackName);
-
-  delay(PLAYBACK_START_DELAY_MS);
 }
 
 void loop() {
-  if (!player.isPlaying()) {
-    enterPowerDownSleep();
-  }
+  if (player.isPlaying()) { playbackObserved = true; return; }
+  if (playbackObserved)     enterPowerDownSleep();
 }
 
 void initStatusLed() {
