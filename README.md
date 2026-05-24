@@ -153,6 +153,45 @@ The 10µF capacitor sits between D9 and the amplifier to block the DC offset fro
 | Audio GND | Nano GND | PAM8403 L_IN− |
 | Speaker | PAM8403 L_OUT+ / L_OUT− | Speaker + / − |
 
+## Uploading the firmware
+
+### 1 — Install the Arduino IDE
+
+Download and install the [Arduino IDE](https://www.arduino.cc/en/software) (version 2.x recommended).
+
+### 2 — Install the CH340 driver
+
+The Nano clone listed in the components uses a **CH340** USB chip instead of the genuine FTDI chip. Windows and older macOS versions need an additional driver before the board shows up as a port.
+
+- **Windows / macOS:** download and install the driver from [wch-ic.com](https://www.wch-ic.com/downloads/CH341SER_EXE.html), then replug the USB cable.
+- **Linux:** the driver is included in the kernel — no action needed.
+
+### 3 — Install the TMRpcm library
+
+Arduino IDE → **Sketch → Include Library → Manage Libraries** → search `TMRpcm` → install.
+
+### 4 — Open the sketch
+
+File → Open → select `hatsu_ino.ino` from this repository.
+
+### 5 — Select the board and port
+
+Connect the Nano via USB, then in the IDE:
+
+| Setting | Value |
+|---|---|
+| Board | **Arduino Nano** |
+| Processor | **ATmega328P (Old Bootloader)** |
+| Port | the COM / tty port that appeared after plugging in |
+
+> Use **Old Bootloader** — most CH340 Nano clones ship with the older bootloader. If the upload fails with a sync error, this is the first thing to try.
+
+### 6 — Upload
+
+Click **Upload** (→ arrow button). The IDE will compile and flash the sketch. The built-in LED will blink briefly during upload, then go dark once the board is ready.
+
+---
+
 ## SD card
 
 **Maximum size: 32GB.** Cards larger than 32GB (SDXC) use exFAT by default, which the Arduino SD library does not support. Any card ≤32GB formatted as FAT32 will work — a 4GB or 8GB card is more than enough. At 16kHz 8-bit mono, a WAV file is ~1MB per minute of audio.
