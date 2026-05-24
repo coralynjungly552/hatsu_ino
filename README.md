@@ -1,5 +1,7 @@
 # hatsu_ino
 
+[![Static Analysis](https://github.com/ArturVRSampaio/hatsu_ino/actions/workflows/cppcheck.yml/badge.svg)](https://github.com/ArturVRSampaio/hatsu_ino/actions/workflows/cppcheck.yml)
+
 > **hatsu** (初, first sound) + **ino** (Arduino) — the first sound your car makes.
 
 A JDM car melody box that plays a WAV audio file when you start your car.
