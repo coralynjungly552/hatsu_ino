@@ -17,13 +17,13 @@ When your car's ignition turns on, hatsu_ino detects the power-up and plays a WA
 | PAM8403 Mini Digital Amplifier 2x3W 5V (pack of 3) | Drives the speaker | [Mercado Livre](https://www.mercadolivre.com.br/3x-amplificador-mini-digital-2x3w-5v-pam8403/up/MLBU1717645519) |
 | Mini Speaker 0.5W 8Ω 40mm (pack of 2) | Audio output | [Mercado Livre](https://www.mercadolivre.com.br/2-x-mini-alto-falante-05w-8-ohms-8r-40mm-para-arduino-esp/up/MLBU1436328953) |
 | LM2596 Adjustable Step-Down Buck Converter 3A | Steps 12V car power down to 5V efficiently | [Mercado Livre](https://www.mercadolivre.com.br/regulador-de-tenso-ajustavel-lm2596-step-down-3a-qualidade/p/MLB34351875) |
-| Micro SD card | Stores `MELODY.WAV` (FAT32 formatted) | — |
+| Electrolytic Capacitor 10µF 50V 105°C (pack of 100) | Audio coupling between D9 and PAM8403 IN+ | [Mercado Livre](https://www.mercadolivre.com.br/capacitor-eletrolitico-10f-50v-econd-105c-100-pecas-5x11mm/p/MLB49758637) |
+| Micro SD card | Stores WAV files (FAT32 formatted) | — |
 
 ### Extra parts needed
 
 | Component | Description | Link |
 |---|---|---|
-| Electrolytic Capacitor 10µF 50V 105°C (pack of 100) | Audio coupling between D9 and PAM8403 IN+ | [Mercado Livre](https://www.mercadolivre.com.br/capacitor-eletrolitico-10f-50v-econd-105c-100-pecas-5x11mm/p/MLB49758637) |
 | Jumper wires / proto board | Connecting components | — |
 | Soldering iron | For permanent connections | — |
 | Patience and time | Required in generous amounts | — |
@@ -32,46 +32,122 @@ When your car's ignition turns on, hatsu_ino detects the power-up and plays a WA
 
 1. Car ignition supplies 12V → LM2596 buck converter steps it down to 5V
 2. Arduino Nano powers on and initializes the SD card module via SPI
-3. It reads `MELODY.WAV` from the SD card
+3. It picks a random WAV file from the SD card and plays it
 4. Audio is sent via PWM (pin D9) → PAM8403 amplifier → speaker
 
-## Wiring
+## Assembly
 
-### Power — 12V car → 5V
-
-Use a DC-DC buck converter module (LM2596 or Mini360). Before connecting anything, **adjust the output to 5V using a multimeter** by turning the trimmer potentiometer on the module.
+### Circuit overview
 
 ```
-Car 12V ──── Buck converter IN+
-Car GND ──── Buck converter IN−
-             Buck converter OUT+ ──── Arduino Nano 5V pin
-             Buck converter OUT− ──── GND
+                   ┌──────────────┐
+   CAR 12V+ ──────►│    LM2596    ├──── 5V  ──────────────────────────── (5V rail)
+   CAR GND  ──────►│  BUCK CONV   ├──── GND ──────────────────────────── (GND rail)
+                   └──────────────┘
+                                           ┌──────────────────────────┐
+   ┌──────────────────────────────┐        │       SD MODULE          │
+   │        ARDUINO NANO          │        │                          │
+   │                              │        │  VCC  ◄──── 5V rail      │
+   │  5V  ◄──── 5V rail           │        │  GND  ◄──── GND rail     │
+   │  GND ◄──── GND rail          │        │                          │
+   │                              │        │  CS   ◄──── D4           │
+   │  D4  ──────────────────────────────►  │  MOSI ◄──── D11          │
+   │  D11 ──────────────────────────────►  │  MISO ─────► D12         │
+   │  D12 ◄────────────────────────────────│  SCK  ◄──── D13          │
+   │  D13 ──────────────────────────────►  └──────────────────────────┘
+   │                              │
+   │  D9  ──── [+ 10µF ─] ─────────────────────────────────────────────────────┐
+   │  GND ─────────────────────────────────────────────────────────────────┐   │
+   └──────────────────────────────┘                                        │   │
+                                                                           │   │
+   ┌──────────────────────────────┐                                        │   │
+   │           PAM8403            │                                        │   │
+   │                              │                                        │   │
+   │  VCC  ◄──── 5V rail          │                                        │   │
+   │  GND  ◄──── GND rail         │                                        │   │
+   │                              │                                        │   │
+   │  L_IN+ ◄───────────────────────────────────────────────────────────────   │
+   │  L_IN─ ◄────────────────────────────────────────────────────────────────── ┘
+   │                              │
+   │  L_OUT+ ──────────────────────────────────────────────────────────► Speaker (+)
+   │  L_OUT─ ──────────────────────────────────────────────────────────► Speaker (─)
+   └──────────────────────────────┘
 ```
 
-No capacitors needed. Buck converters are far more efficient than linear regulators (LM7805) and won't heat up.
+---
 
-### SD card module (SPI)
+### Before you start — calibrate the LM2596
+
+Do this **before connecting anything else** or you risk frying the Nano.
+
+1. Connect LM2596 IN+ to a 12V source and IN− to GND
+2. Put a multimeter on OUT+ and OUT−
+3. Turn the small brass trimmer screw until the output reads exactly **5.0V**
+4. Disconnect power
+
+---
+
+### Step 1 — Power
+
+All components share a common ground. Every GND point in this guide must be connected together.
+
+| From | To |
+|---|---|
+| Car 12V+ | LM2596 IN+ |
+| Car GND | LM2596 IN− |
+| LM2596 OUT+ | Arduino Nano **5V** pin |
+| LM2596 OUT+ | SD module **VCC** |
+| LM2596 OUT+ | PAM8403 **VCC** |
+| LM2596 OUT− | Arduino Nano **GND** |
+| LM2596 OUT− | SD module **GND** |
+| LM2596 OUT− | PAM8403 **GND** |
+
+> Powering the Nano through the **5V pin** (not VIN) bypasses its onboard regulator — this is correct when supplying a clean 5V externally.
+
+---
+
+### Step 2 — SD card module (SPI)
 
 | SD module pin | Arduino Nano pin |
 |---|---|
 | VCC | 5V |
 | GND | GND |
-| CS  | D4 |
+| CS | D4 |
 | MOSI | D11 |
 | MISO | D12 |
 | SCK | D13 |
 
-### Audio — Nano → PAM8403 → Speaker
+---
 
-```
-Nano D9 ──── 10µF cap (blocking DC) ──── PAM8403 IN+
-Nano GND ──────────────────────────────── PAM8403 IN−
-Nano 5V  ──────────────────────────────── PAM8403 VCC
-Nano GND ──────────────────────────────── PAM8403 GND
+### Step 3 — Audio (Nano → capacitor → PAM8403 → speaker)
 
-PAM8403 OUT+ ──── Speaker (+)
-PAM8403 OUT− ──── Speaker (−)
-```
+The 10µF capacitor sits between D9 and the amplifier to block the DC offset from the PWM signal. It is **polarized** — the longer leg (+) faces D9, the shorter leg with the stripe (−) faces PAM8403.
+
+| From | To |
+|---|---|
+| Nano **D9** | Capacitor **+** leg |
+| Capacitor **−** leg | PAM8403 **L_IN+** |
+| Nano **GND** | PAM8403 **L_IN−** |
+| PAM8403 **L_OUT+** | Speaker **(+)** |
+| PAM8403 **L_OUT−** | Speaker **(−)** |
+
+---
+
+### All connections at a glance
+
+| Wire | From | To |
+|---|---|---|
+| 12V power | Car 12V+ | LM2596 IN+ |
+| GND | Car GND | LM2596 IN− |
+| 5V rail | LM2596 OUT+ | Nano 5V, SD VCC, PAM8403 VCC |
+| GND rail | LM2596 OUT− | Nano GND, SD GND, PAM8403 GND |
+| SPI CS | Nano D4 | SD CS |
+| SPI MOSI | Nano D11 | SD MOSI |
+| SPI MISO | Nano D12 | SD MISO |
+| SPI SCK | Nano D13 | SD SCK |
+| Audio | Nano D9 → 10µF cap → PAM8403 L_IN+ | |
+| Audio GND | Nano GND | PAM8403 L_IN− |
+| Speaker | PAM8403 L_OUT+ / L_OUT− | Speaker + / − |
 
 ## SD card
 
