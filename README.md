@@ -21,7 +21,7 @@ When your car's ignition turns on, hatsu_ino detects the power-up and plays a WA
 | Micro SD Card Reader Module for Arduino | Reads WAV files via SPI | — |
 | PAM8403 Mini Digital Amplifier 2x3W 5V (pack of 3) | Drives the speaker | PAM8403 |
 | Mini Speaker 0.5W 8Ω 40mm (pack of 2) | Audio output | — |
-| LM2596 Adjustable Step-Down Buck Converter 3A | Steps 12V car power down to 5V efficiently | LM2596 |
+| LM2596 Adjustable Step-Down Buck Converter 3A | Steps 12V car power down to 5V *(optional — only needed if powering from the 12V car line)* | LM2596 |
 | Electrolytic Capacitor 10µF 50V 105°C (pack of 100) | Audio coupling between D9 and PAM8403 IN+ | — |
 | Micro SD card | Stores WAV files (FAT32 formatted) | — |
 
@@ -35,7 +35,7 @@ When your car's ignition turns on, hatsu_ino detects the power-up and plays a WA
 
 ## How it works
 
-1. Car ignition supplies 12V → LM2596 buck converter steps it down to 5V
+1. Car ignition supplies power → either 12V through the LM2596 buck converter (stepped down to 5V), or directly from an existing 5V source
 2. Arduino Nano powers on and initializes the SD card module via SPI
 3. It picks a random WAV file from the SD card and plays it
 4. Audio is sent via PWM (pin D9) → PAM8403 amplifier → speaker
@@ -82,7 +82,9 @@ When your car's ignition turns on, hatsu_ino detects the power-up and plays a WA
 
 ---
 
-### Before you start — calibrate the LM2596
+### Before you start — choose your power source
+
+**Option A — 12V car line (requires LM2596)**
 
 Do this **before connecting anything else** or you risk frying the Nano.
 
@@ -91,11 +93,17 @@ Do this **before connecting anything else** or you risk frying the Nano.
 3. Turn the small brass trimmer screw until the output reads exactly **5.0V**
 4. Disconnect power
 
+**Option B — existing 5V source**
+
+If your car has a switched USB port or a 5V accessory rail that turns on and off with the ignition, you can skip the LM2596 entirely and connect that 5V source directly to the Nano's 5V and GND pins.
+
 ---
 
 ### Step 1 — Power
 
 All components share a common ground. Every GND point in this guide must be connected together.
+
+**Option A — 12V car line via LM2596**
 
 | From | To |
 |---|---|
@@ -107,6 +115,17 @@ All components share a common ground. Every GND point in this guide must be conn
 | LM2596 OUT− | Arduino Nano **GND** |
 | LM2596 OUT− | SD module **GND** |
 | LM2596 OUT− | PAM8403 **GND** |
+
+**Option B — existing 5V source**
+
+| From | To |
+|---|---|
+| 5V source + | Arduino Nano **5V** pin |
+| 5V source + | SD module **VCC** |
+| 5V source + | PAM8403 **VCC** |
+| 5V source − | Arduino Nano **GND** |
+| 5V source − | SD module **GND** |
+| 5V source − | PAM8403 **GND** |
 
 > Powering the Nano through the **5V pin** (not VIN) bypasses its onboard regulator — this is correct when supplying a clean 5V externally.
 
@@ -143,10 +162,11 @@ The 10µF capacitor sits between D9 and the amplifier to block the DC offset fro
 
 | Wire | From | To |
 |---|---|---|
-| 12V power | Car 12V+ | LM2596 IN+ |
-| GND | Car GND | LM2596 IN− |
-| 5V rail | LM2596 OUT+ | Nano 5V, SD VCC, PAM8403 VCC |
-| GND rail | LM2596 OUT− | Nano GND, SD GND, PAM8403 GND |
+| 12V power *(Option A)* | Car 12V+ | LM2596 IN+ |
+| GND *(Option A)* | Car GND | LM2596 IN− |
+| 5V rail *(Option A)* | LM2596 OUT+ | Nano 5V, SD VCC, PAM8403 VCC |
+| 5V rail *(Option B)* | 5V source + | Nano 5V, SD VCC, PAM8403 VCC |
+| GND rail | LM2596 OUT− or 5V source − | Nano GND, SD GND, PAM8403 GND |
 | SPI CS | Nano D4 | SD CS |
 | SPI MOSI | Nano D11 | SD MOSI |
 | SPI MISO | Nano D12 | SD MISO |
