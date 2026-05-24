@@ -5,87 +5,97 @@
 #include <avr/power.h>
 #include "utils.h"
 
-#define SD_CS_PIN    4
-#define SPEAKER_PIN  9
-#define VOLUME       6        // 0 (silent) to 7 (max)
+const uint8_t SD_CS_PIN              = 4;
+const uint8_t SPEAKER_PIN            = 9;
+const uint8_t VOLUME                 = 6;    // 0 (silent) to 7 (max)
+const uint8_t NOISE_PIN              = A0;   // intentionally unconnected — reads electrical noise for random seed
+const unsigned long PLAYBACK_START_DELAY_MS = 100;
 
-TMRpcm audio;
-char selectedFile[13];        // 8.3 filename format: max 12 chars + null
+enum ErrorCode {
+  SD_INIT_FAILED  = 2,
+  NO_WAV_FILES    = 3,
+  ROOT_DIR_FAILED = 4
+};
 
-void blinkError(uint8_t times) {
+const unsigned long BLINK_DURATION_MS = 200;
+const unsigned long BLINK_PAUSE_MS    = 800;
+
+TMRpcm player;
+
+void setup() {
+  initStatusLed();
+  seedRandom();
+  initSD();
+
+  char trackName[TRACK_NAME_LEN];
+  pickRandomWav(trackName);
+  configureAndPlay(trackName);
+
+  delay(PLAYBACK_START_DELAY_MS);
+}
+
+void loop() {
+  if (!player.isPlaying()) {
+    enterPowerDownSleep();
+  }
+}
+
+void initStatusLed() {
   pinMode(LED_BUILTIN, OUTPUT);
-  while (true) {
-    for (uint8_t i = 0; i < times; i++) {
-      digitalWrite(LED_BUILTIN, HIGH);
-      delay(200);
-      digitalWrite(LED_BUILTIN, LOW);
-      delay(200);
-    }
-    delay(800);
-  }
+  digitalWrite(LED_BUILTIN, LOW);
 }
 
-void pickRandomWav() {
-  uint8_t count = 0;
+void seedRandom() {
+  randomSeed(analogRead(NOISE_PIN));
+}
 
-  File root = SD.open("/");
+void initSD() {
+  if (!SD.begin(SD_CS_PIN)) haltWithErrorCode(SD_INIT_FAILED);
+}
+
+void pickRandomWav(char* trackName) {
+  uint8_t wavFilesScanned = 0;
+  File rootDir = SD.open("/");
+  if (!rootDir) haltWithErrorCode(ROOT_DIR_FAILED);
   while (true) {
-    File f = root.openNextFile();
-    if (!f) break;
-    if (!f.isDirectory() && isWav(f.name())) count++;
-    f.close();
-  }
-  root.close();
-
-  if (count == 0) blinkError(3);
-
-  uint8_t pick = random(count);
-
-  root = SD.open("/");
-  uint8_t index = 0;
-  while (true) {
-    File f = root.openNextFile();
-    if (!f) break;
-    if (!f.isDirectory() && isWav(f.name())) {
-      if (index == pick) {
-        strncpy(selectedFile, f.name(), sizeof(selectedFile) - 1);
-        selectedFile[sizeof(selectedFile) - 1] = '\0';
-        f.close();
-        break;
+    File entry = rootDir.openNextFile();
+    if (!entry) break;
+    if (!entry.isDirectory() && isWav(entry.name())) {
+      wavFilesScanned++;
+      if (random(wavFilesScanned) == 0) {
+        strncpy(trackName, entry.name(), TRACK_NAME_LEN - 1);
+        trackName[TRACK_NAME_LEN - 1] = '\0';
       }
-      index++;
     }
-    f.close();
+    entry.close();
   }
-  root.close();
+  rootDir.close();
+
+  if (wavFilesScanned == 0) haltWithErrorCode(NO_WAV_FILES);
 }
 
-// Enters deep sleep — current drops from ~20mA to ~0.1µA.
-// Wakes automatically on the next ignition power cycle.
-void goToSleep() {
+void configureAndPlay(const char* trackName) {
+  player.speakerPin = SPEAKER_PIN;
+  player.volume(VOLUME);
+  player.play(trackName);
+}
+
+// ~20mA active → ~0.1µA in power-down. Wakes on next ignition power cycle.
+void enterPowerDownSleep() {
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
   sleep_enable();
   power_all_disable();
   sleep_mode();
 }
 
-void setup() {
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
-
-  randomSeed(analogRead(A0)); // floating pin reads electrical noise for seed
-
-  if (!SD.begin(SD_CS_PIN)) blinkError(2);
-
-  pickRandomWav();
-
-  audio.speakerPin = SPEAKER_PIN;
-  audio.volume(VOLUME);
-  audio.play(selectedFile);
-}
-
-void loop() {
-  if (!audio.isPlaying()) {
-    goToSleep();
+void haltWithErrorCode(ErrorCode code) {
+  while (true) {
+    for (uint8_t i = 0; i < code; i++) {
+      digitalWrite(LED_BUILTIN, HIGH);
+      delay(BLINK_DURATION_MS);
+      digitalWrite(LED_BUILTIN, LOW);
+      delay(BLINK_DURATION_MS);
+    }
+    delay(BLINK_PAUSE_MS);
   }
 }

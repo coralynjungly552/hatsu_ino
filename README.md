@@ -161,6 +161,7 @@ The 10µF capacitor sits between D9 and the amplifier to block the DC offset fro
 3. On error, the built-in LED will blink in a repeating pattern:
    - **2 blinks** = SD card failed to initialize (check wiring or reformat)
    - **3 blinks** = no `.wav` files found on the SD card
+   - **4 blinks** = SD root directory failed to open (try reformatting)
 
 ### File naming rules
 
