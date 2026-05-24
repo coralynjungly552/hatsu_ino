@@ -34,6 +34,7 @@ When your car's ignition turns on, hatsu_ino detects the power-up and plays a WA
 2. Arduino Nano powers on and initializes the SD card module via SPI
 3. It picks a random WAV file from the SD card and plays it
 4. Audio is sent via PWM (pin D9) → PAM8403 amplifier → speaker
+5. Once playback finishes, the board enters deep sleep (~0.1µA) until the next ignition power cycle
 
 ## Assembly
 

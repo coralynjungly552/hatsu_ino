@@ -1,6 +1,8 @@
 #include <SD.h>
 #include <SPI.h>
 #include <TMRpcm.h>
+#include <avr/sleep.h>
+#include <avr/power.h>
 #include "utils.h"
 
 #define SD_CS_PIN    4
@@ -58,6 +60,15 @@ void pickRandomWav() {
   root.close();
 }
 
+// Enters deep sleep — current drops from ~20mA to ~0.1µA.
+// Wakes automatically on the next ignition power cycle.
+void goToSleep() {
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+  sleep_enable();
+  power_all_disable();
+  sleep_mode();
+}
+
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
@@ -74,5 +85,7 @@ void setup() {
 }
 
 void loop() {
-  // TMRpcm plays via hardware interrupt — nothing needed here
+  if (!audio.isPlaying()) {
+    goToSleep();
+  }
 }
