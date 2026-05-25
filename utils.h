@@ -12,13 +12,11 @@ inline bool isWav(const char* filename) {
   return len > 4 && strcasecmp(filename + len - 4, ".WAV") == 0;
 }
 
-// Checks the 12-byte RIFF/WAVE magic at the start of a WAV file.
 inline bool isValidWavHeader(const uint8_t* header) {
   return header[0]=='R' && header[1]=='I' && header[2]=='F' && header[3]=='F' &&
          header[8]=='W' && header[9]=='A' && header[10]=='V' && header[11]=='E';
 }
 
-// Returns false if the file is smaller than minSizeKb kilobytes (0 = no filter).
 inline bool meetsMinSize(uint32_t fileSize, uint8_t minSizeKb) {
   return minSizeKb == 0 || fileSize >= (uint32_t)minSizeKb * 1024;
 }
@@ -41,14 +39,11 @@ inline uint8_t shuffleMarkPlayed(uint8_t mask, uint8_t index) {
   return mask | (uint8_t)(1u << index);
 }
 
-// Returns true when all `total` tracks have been played (all low bits set).
 inline bool shuffleAllPlayed(uint8_t mask, uint8_t total) {
   if (total == 0 || total > SHUFFLE_MAX_TRACKS) return false;
   uint8_t fullMask = (uint8_t)((1u << total) - 1u);
   return (mask & fullMask) == fullMask;
 }
-
-// ---
 
 enum PlayMode : uint8_t {
   MODE_RANDOM,
@@ -68,10 +63,12 @@ struct Config {
 
 static const Config DEFAULT_CONFIG = {6, MODE_RANDOM, "", 0, 0, 1};
 
-// Parses one "KEY=VALUE" line from CONFIG.TXT and applies it to cfg.
-// Returns true if the key was recognized and the value was valid.
-// Skips blank lines and lines starting with '#'.
-// Trims leading/trailing spaces around key and value.
+inline void copyTrackName(char* dst, const char* src) {
+  strncpy(dst, src, TRACK_NAME_LEN - 1);
+  dst[TRACK_NAME_LEN - 1] = '\0';
+}
+
+// Parses "KEY=VALUE" lines; skips blank lines and '#' comments; trims spaces.
 inline bool applyConfigLine(Config& cfg, const char* line) {
   if (!line || line[0] == '#' || line[0] == '\0') return false;
 
@@ -122,31 +119,22 @@ inline bool applyConfigLine(Config& cfg, const char* line) {
   }
   if (strcasecmp(key, "TRACK") == 0) {
     if (!isWav(value) || strlen(value) >= TRACK_NAME_LEN) return false;
-    strncpy(cfg.singleTrack, value, TRACK_NAME_LEN - 1);
-    cfg.singleTrack[TRACK_NAME_LEN - 1] = '\0';
+    copyTrackName(cfg.singleTrack, value);
     return true;
   }
   return false;
 }
 
-inline void copyTrackName(char* dst, const char* src) {
-  strncpy(dst, src, TRACK_NAME_LEN - 1);
-  dst[TRACK_NAME_LEN - 1] = '\0';
-}
-
-// Returns true when name should be excluded from random selection.
-// An empty or uninitialized lastPlayed (first boot: 0xFF bytes) will never match a valid filename.
+// 0xFF first-boot EEPROM bytes are not valid filenames — lastPlayed never falsely matches.
 inline bool shouldSkipForAntiRepeat(const char* name, const char* lastPlayed) {
   return lastPlayed[0] != '\0' && strcmp(name, lastPlayed) == 0;
 }
 
-// Maps a stored EEPROM index to a valid play index, handling first-boot (0xFF) and wrap.
 inline uint8_t resolveSequentialIndex(uint8_t stored, uint8_t total) {
   if (total == 0) return 0;
   return stored >= total ? 0 : stored;
 }
 
-// Returns the index to persist after playing current, wrapping at total.
 inline uint8_t nextSequentialIndex(uint8_t current, uint8_t total) {
   if (total == 0) return 0;
   return (uint8_t)((current + 1) % total);

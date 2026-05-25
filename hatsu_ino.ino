@@ -11,13 +11,14 @@ const uint8_t  SPEAKER_PIN             = 9;
 const int      NOISE_PIN               = A0;   // intentionally unconnected — reads electrical noise for random seed
 const uint8_t  EEPROM_TRACK_ADDR       = 0;    // sequential mode: play index (1 byte)
 const uint8_t  EEPROM_LAST_PLAYED_ADDR = 1;    // random mode: last played filename (TRACK_NAME_LEN bytes)
-const uint8_t  EEPROM_SHUFFLE_MASK_ADDR = EEPROM_LAST_PLAYED_ADDR + TRACK_NAME_LEN; // shuffle mode: bitmask (1 byte)
+const uint8_t  EEPROM_SHUFFLE_MASK_ADDR = (uint8_t)(EEPROM_LAST_PLAYED_ADDR + TRACK_NAME_LEN); // shuffle mode: bitmask (1 byte)
 
 const uint8_t      SD_INIT_RETRIES       = 3;
 const unsigned long SD_RETRY_DELAY_MS    = 500;
 const unsigned long PLAYBACK_WATCHDOG_MS = 2000;
 const unsigned long FADE_STEP_MS         = 100;
 const uint8_t      ERROR_BLINK_CYCLES    = 3;
+const uint8_t      CONFIG_LINE_LEN       = 32;
 
 enum ErrorCode {
   SD_INIT_FAILED   = 2,
@@ -99,17 +100,15 @@ Config loadConfig() {
   Config cfg = DEFAULT_CONFIG;
   File f = SD.open("CONFIG.TXT");
   if (!f) return cfg;
-  char line[32];
+  char line[CONFIG_LINE_LEN];
   uint8_t pos = 0;
+  auto flush = [&]() { if (pos > 0) { line[pos] = '\0'; applyConfigLine(cfg, line); pos = 0; } };
   while (f.available()) {
     char c = (char)f.read();
-    if (c == '\n' || c == '\r') {
-      if (pos > 0) { line[pos] = '\0'; applyConfigLine(cfg, line); pos = 0; }
-    } else if (pos < (uint8_t)(sizeof(line) - 1)) {
-      line[pos++] = c;
-    }
+    if (c == '\n' || c == '\r') flush();
+    else if (pos < (uint8_t)(sizeof(line) - 1)) line[pos++] = c;
   }
-  if (pos > 0) { line[pos] = '\0'; applyConfigLine(cfg, line); }
+  flush();
   f.close();
   return cfg;
 }
@@ -168,6 +167,8 @@ void pickWav(char* trackName, const Config& cfg) {
     case MODE_SHUFFLE:
       pickShuffleWav(trackName, cfg.minSizeKb);
       break;
+    default:
+      haltWithErrorCode(NO_WAV_FILES);
   }
 }
 
@@ -222,17 +223,33 @@ uint8_t countWavFiles(uint8_t minSizeKb) {
 }
 
 void pickSequentialWav(char* trackName, uint8_t minSizeKb) {
-  uint8_t total = countWavFiles(minSizeKb);
-  if (total == 0) haltWithErrorCode(NO_WAV_FILES);
-
   uint8_t stored = EEPROM.read(EEPROM_TRACK_ADDR);
-  uint8_t idx    = resolveSequentialIndex(stored, total);
+  uint8_t total = 0;
+  char firstFile[TRACK_NAME_LEN] = "";
+  trackName[0] = '\0';
 
-  fetchFileAtIndex(trackName, idx, minSizeKb);
+  File rootDir = SD.open("/");
+  if (!rootDir) haltWithErrorCode(ROOT_DIR_FAILED);
+  while (true) {
+    File entry = rootDir.openNextFile();
+    if (!entry) break;
+    if (isEligibleFile(entry, minSizeKb)) {
+      if (total == 0) copyTrackName(firstFile, entry.name());
+      if (total == stored) copyTrackName(trackName, entry.name());
+      total++;
+    }
+    entry.close();
+  }
+  rootDir.close();
+
+  if (total == 0) haltWithErrorCode(NO_WAV_FILES);
+  uint8_t idx = resolveSequentialIndex(stored, total);
+  if (trackName[0] == '\0') copyTrackName(trackName, firstFile);
   EEPROM.write(EEPROM_TRACK_ADDR, nextSequentialIndex(idx, total));
 }
 
 void pickShuffleWav(char* trackName, uint8_t minSizeKb) {
+  // total needed before sampling: SHUFFLE_MAX_TRACKS check and mask-reset both require it upfront
   uint8_t total = countWavFiles(minSizeKb);
   if (total == 0) haltWithErrorCode(NO_WAV_FILES);
 
