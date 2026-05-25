@@ -3,8 +3,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-const size_t TRACK_NAME_LEN    = 13;   // 8.3 format: max 12 chars + null
-const size_t WAV_HEADER_MIN_SIZE = 12; // RIFF(4) + size(4) + WAVE(4)
+const size_t  TRACK_NAME_LEN     = 13;  // 8.3 format: max 12 chars + null
+const size_t  WAV_HEADER_MIN_SIZE = 12; // RIFF(4) + size(4) + WAVE(4)
+const uint8_t SHUFFLE_MAX_TRACKS  = 8;  // bitmask fits one EEPROM byte
 
 inline bool isWav(const char* filename) {
   size_t len = strlen(filename);
@@ -30,10 +31,30 @@ inline bool reservoirShouldReplace(uint8_t n, RandomFn randFn) {
   return randFn(n) == 0;
 }
 
+// --- Shuffle helpers (EEPROM bitmask, max SHUFFLE_MAX_TRACKS tracks) ---
+
+inline bool shufflePlayed(uint8_t mask, uint8_t index) {
+  return (mask & (uint8_t)(1u << index)) != 0;
+}
+
+inline uint8_t shuffleMarkPlayed(uint8_t mask, uint8_t index) {
+  return mask | (uint8_t)(1u << index);
+}
+
+// Returns true when all `total` tracks have been played (all low bits set).
+inline bool shuffleAllPlayed(uint8_t mask, uint8_t total) {
+  if (total == 0 || total > SHUFFLE_MAX_TRACKS) return false;
+  uint8_t fullMask = (uint8_t)((1u << total) - 1u);
+  return (mask & fullMask) == fullMask;
+}
+
+// ---
+
 enum PlayMode : uint8_t {
   MODE_RANDOM,
   MODE_SEQUENTIAL,
-  MODE_SINGLE
+  MODE_SINGLE,
+  MODE_SHUFFLE
 };
 
 struct Config {
@@ -42,9 +63,10 @@ struct Config {
   char singleTrack[TRACK_NAME_LEN];
   uint8_t delaySeconds;
   uint8_t minSizeKb;
+  uint8_t repeat;       // how many times to play the chosen track (minimum 1)
 };
 
-static const Config DEFAULT_CONFIG = {6, MODE_RANDOM, "", 0, 0};
+static const Config DEFAULT_CONFIG = {6, MODE_RANDOM, "", 0, 0, 1};
 
 // Parses one "KEY=VALUE" line from CONFIG.TXT and applies it to cfg.
 // Returns true if the key was recognized and the value was valid.
@@ -80,6 +102,7 @@ inline bool applyConfigLine(Config& cfg, const char* line) {
     if (strcasecmp(value, "RANDOM") == 0)     { cfg.mode = MODE_RANDOM;     return true; }
     if (strcasecmp(value, "SEQUENTIAL") == 0) { cfg.mode = MODE_SEQUENTIAL; return true; }
     if (strcasecmp(value, "SINGLE") == 0)     { cfg.mode = MODE_SINGLE;     return true; }
+    if (strcasecmp(value, "SHUFFLE") == 0)    { cfg.mode = MODE_SHUFFLE;    return true; }
     return false;
   }
   if (strcasecmp(key, "DELAY") == 0) {
@@ -90,6 +113,11 @@ inline bool applyConfigLine(Config& cfg, const char* line) {
   if (strcasecmp(key, "MIN_SIZE") == 0) {
     int v = atoi(value);
     if (v >= 0 && v <= 255) { cfg.minSizeKb = (uint8_t)v; return true; }
+    return false;
+  }
+  if (strcasecmp(key, "REPEAT") == 0) {
+    int v = atoi(value);
+    if (v >= 1 && v <= 255) { cfg.repeat = (uint8_t)v; return true; }
     return false;
   }
   if (strcasecmp(key, "TRACK") == 0) {

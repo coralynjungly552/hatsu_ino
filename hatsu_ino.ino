@@ -6,16 +6,18 @@
 #include <avr/power.h>
 #include "utils.h"
 
-const uint8_t  SD_CS_PIN              = 4;
-const uint8_t  SPEAKER_PIN            = 9;
-const int      NOISE_PIN              = A0;   // intentionally unconnected — reads electrical noise for random seed
-const uint8_t  EEPROM_TRACK_ADDR      = 0;    // sequential mode: play index (1 byte)
-const uint8_t  EEPROM_LAST_PLAYED_ADDR = 1;   // random mode: last played filename (TRACK_NAME_LEN bytes)
+const uint8_t  SD_CS_PIN               = 4;
+const uint8_t  SPEAKER_PIN             = 9;
+const int      NOISE_PIN               = A0;   // intentionally unconnected — reads electrical noise for random seed
+const uint8_t  EEPROM_TRACK_ADDR       = 0;    // sequential mode: play index (1 byte)
+const uint8_t  EEPROM_LAST_PLAYED_ADDR = 1;    // random mode: last played filename (TRACK_NAME_LEN bytes)
+const uint8_t  EEPROM_SHUFFLE_MASK_ADDR = 14;  // shuffle mode: played-tracks bitmask (1 byte)
 
-const uint8_t      SD_INIT_RETRIES      = 3;
-const unsigned long SD_RETRY_DELAY_MS   = 500;
+const uint8_t      SD_INIT_RETRIES       = 3;
+const unsigned long SD_RETRY_DELAY_MS    = 500;
 const unsigned long PLAYBACK_WATCHDOG_MS = 2000;
-const uint8_t      ERROR_BLINK_CYCLES   = 3;
+const unsigned long FADE_STEP_MS         = 100;  // ms between volume steps during fade in
+const uint8_t      ERROR_BLINK_CYCLES    = 3;
 
 enum ErrorCode {
   SD_INIT_FAILED   = 2,
@@ -28,8 +30,11 @@ const unsigned long BLINK_DURATION_MS = 200;
 const unsigned long BLINK_PAUSE_MS    = 800;
 
 TMRpcm player;
-bool playbackObserved      = false;
-unsigned long playbackDeadline = 0;
+bool          playbackObserved  = false;
+unsigned long playbackDeadline  = 0;
+uint8_t       repeatsDone       = 0;
+uint8_t       repeatTarget      = 1;
+char          currentTrack[TRACK_NAME_LEN] = "";
 
 void haltWithErrorCode(ErrorCode code) __attribute__((noreturn));
 
@@ -39,10 +44,15 @@ void setup() {
   initSD();
 
   Config cfg = loadConfig();
+  repeatTarget = cfg.repeat;
+
   if (cfg.delaySeconds > 0) delay((unsigned long)cfg.delaySeconds * 1000UL);
+
   char trackName[TRACK_NAME_LEN];
   pickWav(trackName, cfg);
   validateWavFile(trackName);
+  strncpy(currentTrack, trackName, TRACK_NAME_LEN);
+
   configureAndPlay(trackName, cfg.volume);
 }
 
@@ -52,8 +62,21 @@ void loop() {
     digitalWrite(LED_BUILTIN, (millis() % 1000UL < 100UL) ? HIGH : LOW);
     return;
   }
+
   digitalWrite(LED_BUILTIN, LOW);
-  if (playbackObserved)            enterPowerDownSleep();
+
+  if (playbackObserved) {
+    playbackObserved = false;
+    repeatsDone++;
+    if (repeatsDone >= repeatTarget) {
+      enterPowerDownSleep();
+      return; // unreachable
+    }
+    player.play(currentTrack);
+    playbackDeadline = millis() + PLAYBACK_WATCHDOG_MS;
+    return;
+  }
+
   if (millis() > playbackDeadline) haltWithErrorCode(PLAYBACK_TIMEOUT);
 }
 
@@ -117,6 +140,9 @@ void pickWav(char* trackName, const Config& cfg) {
       break;
     case MODE_SINGLE:
       pickSingleWav(trackName, cfg.singleTrack);
+      break;
+    case MODE_SHUFFLE:
+      pickShuffleWav(trackName, cfg.minSizeKb);
       break;
   }
 }
@@ -211,6 +237,56 @@ void pickSequentialWav(char* trackName, uint8_t minSizeKb) {
   EEPROM.write(EEPROM_TRACK_ADDR, nextSequentialIndex(idx, total));
 }
 
+void pickShuffleWav(char* trackName, uint8_t minSizeKb) {
+  uint8_t total = countWavFiles(minSizeKb);
+  if (total == 0) haltWithErrorCode(NO_WAV_FILES);
+
+  // More than 8 tracks: fall back to anti-repeat random
+  if (total > SHUFFLE_MAX_TRACKS) {
+    char lastPlayed[TRACK_NAME_LEN];
+    readLastPlayed(lastPlayed);
+    pickRandomWav(trackName, lastPlayed, minSizeKb);
+    writeLastPlayed(trackName);
+    return;
+  }
+
+  uint8_t mask = EEPROM.read(EEPROM_SHUFFLE_MASK_ADDR);
+  if (shuffleAllPlayed(mask, total)) mask = 0;
+
+  // Reservoir sampling over unplayed indices
+  uint8_t scanned     = 0;
+  uint8_t selectedIdx = 0;
+  for (uint8_t i = 0; i < total; i++) {
+    if (!shufflePlayed(mask, i)) {
+      scanned++;
+      if (reservoirShouldReplace(scanned, random)) selectedIdx = i;
+    }
+  }
+
+  trackName[0] = '\0';
+  File rootDir = SD.open("/");
+  if (!rootDir) haltWithErrorCode(ROOT_DIR_FAILED);
+  uint8_t current = 0;
+  while (true) {
+    File entry = rootDir.openNextFile();
+    if (!entry) break;
+    if (!entry.isDirectory() && isWav(entry.name()) && meetsMinSize(entry.size(), minSizeKb)) {
+      if (current == selectedIdx) {
+        strncpy(trackName, entry.name(), TRACK_NAME_LEN - 1);
+        trackName[TRACK_NAME_LEN - 1] = '\0';
+        entry.close();
+        break;
+      }
+      current++;
+    }
+    entry.close();
+  }
+  rootDir.close();
+
+  if (trackName[0] == '\0') haltWithErrorCode(NO_WAV_FILES);
+  EEPROM.write(EEPROM_SHUFFLE_MASK_ADDR, shuffleMarkPlayed(mask, selectedIdx));
+}
+
 void pickSingleWav(char* trackName, const char* singleTrack) {
   if (singleTrack[0] == '\0') haltWithErrorCode(NO_WAV_FILES);
   File f = SD.open(singleTrack);
@@ -222,8 +298,13 @@ void pickSingleWav(char* trackName, const char* singleTrack) {
 
 void configureAndPlay(const char* trackName, uint8_t volume) {
   player.speakerPin = SPEAKER_PIN;
-  player.volume(volume);
+  player.volume(0);
   player.play(trackName);
+  // Fade in: ramp from 0 to target volume, one step per FADE_STEP_MS
+  for (uint8_t v = 1; v <= volume; v++) {
+    delay(FADE_STEP_MS);
+    player.volume(v);
+  }
   playbackDeadline = millis() + PLAYBACK_WATCHDOG_MS;
 }
 

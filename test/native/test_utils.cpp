@@ -91,6 +91,62 @@ TEST_CASE("meetsMinSize handles larger thresholds", "[minsize]") {
     REQUIRE_FALSE(meetsMinSize(16383, 16));
 }
 
+// --- shuffle helpers ---
+
+TEST_CASE("shufflePlayed returns false when bit is clear", "[shuffle]") {
+    REQUIRE_FALSE(shufflePlayed(0b00000000, 0));
+    REQUIRE_FALSE(shufflePlayed(0b00000010, 0));
+}
+
+TEST_CASE("shufflePlayed returns true when bit is set", "[shuffle]") {
+    REQUIRE(shufflePlayed(0b00000001, 0));
+    REQUIRE(shufflePlayed(0b00000010, 1));
+    REQUIRE(shufflePlayed(0b11111111, 7));
+}
+
+TEST_CASE("shuffleMarkPlayed sets the correct bit", "[shuffle]") {
+    REQUIRE(shuffleMarkPlayed(0, 0) == 0b00000001);
+    REQUIRE(shuffleMarkPlayed(0, 1) == 0b00000010);
+    REQUIRE(shuffleMarkPlayed(0b00000101, 1) == 0b00000111);
+}
+
+TEST_CASE("shuffleAllPlayed returns true when all bits for total are set", "[shuffle]") {
+    REQUIRE(shuffleAllPlayed(0b00000111, 3));
+    REQUIRE(shuffleAllPlayed(0b11111111, 8));
+    REQUIRE(shuffleAllPlayed(0b00000001, 1));
+}
+
+TEST_CASE("shuffleAllPlayed returns false when any bit is missing", "[shuffle]") {
+    REQUIRE_FALSE(shuffleAllPlayed(0b00000110, 3)); // index 0 not played
+    REQUIRE_FALSE(shuffleAllPlayed(0b00000000, 3));
+}
+
+TEST_CASE("shuffleAllPlayed returns false for edge cases", "[shuffle]") {
+    REQUIRE_FALSE(shuffleAllPlayed(0b11111111, 0)); // no tracks
+    REQUIRE_FALSE(shuffleAllPlayed(0b11111111, 9)); // exceeds SHUFFLE_MAX_TRACKS
+}
+
+// --- applyConfigLine REPEAT ---
+
+TEST_CASE("applyConfigLine REPEAT accepts valid range", "[config]") {
+    Config cfg = DEFAULT_CONFIG;
+    REQUIRE(applyConfigLine(cfg, "REPEAT=1"));   REQUIRE(cfg.repeat == 1);
+    REQUIRE(applyConfigLine(cfg, "REPEAT=3"));   REQUIRE(cfg.repeat == 3);
+    REQUIRE(applyConfigLine(cfg, "REPEAT=255")); REQUIRE(cfg.repeat == 255);
+}
+
+TEST_CASE("applyConfigLine REPEAT rejects zero and out-of-range", "[config]") {
+    Config cfg = DEFAULT_CONFIG;
+    REQUIRE_FALSE(applyConfigLine(cfg, "REPEAT=0"));
+    REQUIRE_FALSE(applyConfigLine(cfg, "REPEAT=256"));
+    REQUIRE(cfg.repeat == 1);
+}
+
+TEST_CASE("applyConfigLine REPEAT default is 1", "[config]") {
+    Config cfg = DEFAULT_CONFIG;
+    REQUIRE(cfg.repeat == 1);
+}
+
 // --- applyConfigLine MIN_SIZE ---
 
 TEST_CASE("applyConfigLine MIN_SIZE accepts valid range", "[config]") {

@@ -48,10 +48,13 @@ When your car's ignition turns on, hatsu_ino detects the power-up and plays a WA
 ### Circuit overview
 
 ```
-                   ┌──────────────┐
-   CAR 12V+ ──────►│    LM2596    ├──── 5V  ──────────────────────────── (5V rail)
-   CAR GND  ──────►│  BUCK CONV   ├──── GND ──────────────────────────── (GND rail)
-                   └──────────────┘
+   ┌─────────────────────── Option A — 12V car line ────────────────────────────────┐
+   │                   ┌──────────────┐                                             │
+   │   CAR 12V+ ──────►│    LM2596    ├──── 5V  ────────────────────── (5V rail)    │
+   │   CAR GND  ──────►│  BUCK CONV   ├──── GND ────────────────────── (GND rail)   │
+   │                   └──────────────┘                                             │
+   └────────────────────────────────────────────────────────────────────────────────┘
+
                                            ┌──────────────────────────┐
    ┌──────────────────────────────┐        │       SD MODULE          │
    │        ARDUINO NANO          │        │                          │
@@ -75,10 +78,12 @@ When your car's ignition turns on, hatsu_ino detects the power-up and plays a WA
    │                              │                                        │   │
    │  L_IN+ ◄──────────────────────────────────────────────────────────────┘   │
    │  L_IN─ ◄──────────────────────────────────────────────────────────────────┘
-   │                              │
-   │  L_OUT+ ──────────────────────────────────────────────────────────► Speaker (+)
-   │  L_OUT─ ──────────────────────────────────────────────────────────► Speaker (─)
-   └──────────────────────────────┘
+   │                              │                                ┌──────────────────┐
+   │                              │                                │     SPEAKER      │
+   │                              │                                │                  │
+   │  L_OUT+ ──────────────────────────────────────────────────────────► POSITIVE     │
+   │  L_OUT─ ──────────────────────────────────────────────────────────► NEGATIVE     │
+   └──────────────────────────────┘                                └──────────────────┘
 ```
 
 > The diagram above shows **Option A** (12V → LM2596 → 5V rail). For **Option B**, omit the LM2596 and connect your switched 5V source directly to the 5V rail.
@@ -274,6 +279,7 @@ Place a file named `CONFIG.TXT` in the root of the SD card to customise behaviou
 | `MODE` | `RANDOM` / `SEQUENTIAL` / `SINGLE` | `RANDOM` | Track selection mode |
 | `DELAY` | `0` – `255` | `0` | Seconds to wait after power-up before playing |
 | `MIN_SIZE` | `0` – `255` | `0` | Skip WAV files smaller than N kilobytes (0 = no filter) |
+| `REPEAT` | `1` – `255` | `1` | How many times to play the chosen track before sleeping |
 | `TRACK` | any valid WAV filename | *(none)* | File to play in `SINGLE` mode |
 
 **Example:**
@@ -286,6 +292,8 @@ MODE=SEQUENTIAL
 **MODE=RANDOM** — picks a random WAV file each time the car starts (reservoir sampling, uniform distribution). The last played track is remembered in EEPROM so the same file is never picked twice in a row. If only one file is on the card it plays every time regardless.
 
 **MODE=SEQUENTIAL** — plays WAV files in the order the SD card returns them, advancing by one track each ignition cycle. The current position is stored in the Nano's EEPROM so it survives power-off.
+
+**MODE=SHUFFLE** — plays every track exactly once before any track repeats. Played tracks are tracked via an EEPROM bitmask. Once all tracks have been played the cycle resets. Supports up to 8 tracks; if more are present it falls back to RANDOM mode.
 
 **MODE=SINGLE** — always plays the file specified by `TRACK`. If `TRACK` is not set or the file does not exist on the card, the built-in LED blinks the "no WAV files" error (3 blinks).
 
