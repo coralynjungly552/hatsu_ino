@@ -75,13 +75,20 @@ Config loadConfig() {
 }
 
 void pickWav(char* trackName, const Config& cfg) {
-  if (cfg.randomMode) {
-    char lastPlayed[TRACK_NAME_LEN];
-    readLastPlayed(lastPlayed);
-    pickRandomWav(trackName, lastPlayed);
-    writeLastPlayed(trackName);
-  } else {
-    pickSequentialWav(trackName);
+  switch (cfg.mode) {
+    case MODE_RANDOM: {
+      char lastPlayed[TRACK_NAME_LEN];
+      readLastPlayed(lastPlayed);
+      pickRandomWav(trackName, lastPlayed);
+      writeLastPlayed(trackName);
+      break;
+    }
+    case MODE_SEQUENTIAL:
+      pickSequentialWav(trackName);
+      break;
+    case MODE_SINGLE:
+      pickSingleWav(trackName, cfg.singleTrack);
+      break;
   }
 }
 
@@ -173,6 +180,15 @@ void pickSequentialWav(char* trackName) {
 
   if (trackName[0] == '\0') haltWithErrorCode(NO_WAV_FILES);
   EEPROM.write(EEPROM_TRACK_ADDR, nextSequentialIndex(idx, total));
+}
+
+void pickSingleWav(char* trackName, const char* singleTrack) {
+  if (singleTrack[0] == '\0') haltWithErrorCode(NO_WAV_FILES);
+  File f = SD.open(singleTrack);
+  if (!f) haltWithErrorCode(NO_WAV_FILES);
+  f.close();
+  strncpy(trackName, singleTrack, TRACK_NAME_LEN - 1);
+  trackName[TRACK_NAME_LEN - 1] = '\0';
 }
 
 void configureAndPlay(const char* trackName, uint8_t volume) {

@@ -17,12 +17,19 @@ inline bool reservoirShouldReplace(uint8_t n, RandomFn randFn) {
   return randFn(n) == 0;
 }
 
-struct Config {
-  uint8_t volume;
-  bool randomMode;
+enum PlayMode : uint8_t {
+  MODE_RANDOM,
+  MODE_SEQUENTIAL,
+  MODE_SINGLE
 };
 
-static const Config DEFAULT_CONFIG = {6, true};
+struct Config {
+  uint8_t volume;
+  PlayMode mode;
+  char singleTrack[TRACK_NAME_LEN];
+};
+
+static const Config DEFAULT_CONFIG = {6, MODE_RANDOM, ""};
 
 // Parses one "KEY=VALUE" line from CONFIG.TXT and applies it to cfg.
 // Returns true if the key was recognized and the value was valid.
@@ -55,9 +62,16 @@ inline bool applyConfigLine(Config& cfg, const char* line) {
     return false;
   }
   if (strcasecmp(key, "MODE") == 0) {
-    if (strcasecmp(value, "SEQUENTIAL") == 0) { cfg.randomMode = false; return true; }
-    if (strcasecmp(value, "RANDOM") == 0)     { cfg.randomMode = true;  return true; }
+    if (strcasecmp(value, "RANDOM") == 0)     { cfg.mode = MODE_RANDOM;     return true; }
+    if (strcasecmp(value, "SEQUENTIAL") == 0) { cfg.mode = MODE_SEQUENTIAL; return true; }
+    if (strcasecmp(value, "SINGLE") == 0)     { cfg.mode = MODE_SINGLE;     return true; }
     return false;
+  }
+  if (strcasecmp(key, "TRACK") == 0) {
+    if (!isWav(value) || strlen(value) >= TRACK_NAME_LEN) return false;
+    strncpy(cfg.singleTrack, value, TRACK_NAME_LEN - 1);
+    cfg.singleTrack[TRACK_NAME_LEN - 1] = '\0';
+    return true;
   }
   return false;
 }

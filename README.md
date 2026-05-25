@@ -268,7 +268,8 @@ Place a file named `CONFIG.TXT` in the root of the SD card to customise behaviou
 | Key | Values | Default | Description |
 |---|---|---|---|
 | `VOLUME` | `0` – `7` | `6` | Playback volume (0 = silent, 7 = max) |
-| `MODE` | `RANDOM` / `SEQUENTIAL` | `RANDOM` | Track selection mode |
+| `MODE` | `RANDOM` / `SEQUENTIAL` / `SINGLE` | `RANDOM` | Track selection mode |
+| `TRACK` | any valid WAV filename | *(none)* | File to play in `SINGLE` mode |
 
 **Example:**
 ```
@@ -280,6 +281,8 @@ MODE=SEQUENTIAL
 **MODE=RANDOM** — picks a random WAV file each time the car starts (reservoir sampling, uniform distribution). The last played track is remembered in EEPROM so the same file is never picked twice in a row. If only one file is on the card it plays every time regardless.
 
 **MODE=SEQUENTIAL** — plays WAV files in the order the SD card returns them, advancing by one track each ignition cycle. The current position is stored in the Nano's EEPROM so it survives power-off.
+
+**MODE=SINGLE** — always plays the file specified by `TRACK`. If `TRACK` is not set or the file does not exist on the card, the built-in LED blinks the "no WAV files" error (3 blinks).
 
 ## Testing
 

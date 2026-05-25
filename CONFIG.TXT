@@ -6,6 +6,12 @@
 VOLUME=6
 
 # Playback mode:
-#   RANDOM     - picks a random WAV file each ignition cycle (default)
+#   RANDOM     - picks a random WAV file each ignition cycle,
+#                never repeating the same track twice in a row (default)
 #   SEQUENTIAL - plays WAV files in order, advancing one track per cycle
+#   SINGLE     - always plays the file set by TRACK= below
 MODE=RANDOM
+
+# Track to play in SINGLE mode (ignored in RANDOM and SEQUENTIAL modes).
+# Must be a valid 8.3 WAV filename matching a file on the SD card.
+# TRACK=STARTUP.WAV

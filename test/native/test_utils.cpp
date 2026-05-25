@@ -82,43 +82,69 @@ TEST_CASE("applyConfigLine VOLUME is case-insensitive on key", "[config]") {
     REQUIRE(applyConfigLine(cfg, "volume=4")); REQUIRE(cfg.volume == 4);
 }
 
-TEST_CASE("applyConfigLine MODE=SEQUENTIAL sets randomMode false", "[config]") {
+TEST_CASE("applyConfigLine MODE=SEQUENTIAL sets mode", "[config]") {
     Config cfg = DEFAULT_CONFIG;
     REQUIRE(applyConfigLine(cfg, "MODE=SEQUENTIAL"));
-    REQUIRE_FALSE(cfg.randomMode);
+    REQUIRE(cfg.mode == MODE_SEQUENTIAL);
 }
 
-TEST_CASE("applyConfigLine MODE=RANDOM sets randomMode true", "[config]") {
+TEST_CASE("applyConfigLine MODE=RANDOM sets mode", "[config]") {
     Config cfg = DEFAULT_CONFIG;
-    cfg.randomMode = false;
+    cfg.mode = MODE_SEQUENTIAL;
     REQUIRE(applyConfigLine(cfg, "MODE=RANDOM"));
-    REQUIRE(cfg.randomMode);
+    REQUIRE(cfg.mode == MODE_RANDOM);
+}
+
+TEST_CASE("applyConfigLine MODE=SINGLE sets mode", "[config]") {
+    Config cfg = DEFAULT_CONFIG;
+    REQUIRE(applyConfigLine(cfg, "MODE=SINGLE"));
+    REQUIRE(cfg.mode == MODE_SINGLE);
 }
 
 TEST_CASE("applyConfigLine MODE rejects unknown values", "[config]") {
     Config cfg = DEFAULT_CONFIG;
     REQUIRE_FALSE(applyConfigLine(cfg, "MODE=LOOP"));
-    REQUIRE(cfg.randomMode);
+    REQUIRE(cfg.mode == MODE_RANDOM);
 }
 
 TEST_CASE("applyConfigLine is case-insensitive on key and value", "[config]") {
     Config cfg = DEFAULT_CONFIG;
     REQUIRE(applyConfigLine(cfg, "mode=sequential"));
-    REQUIRE_FALSE(cfg.randomMode);
+    REQUIRE(cfg.mode == MODE_SEQUENTIAL);
+}
+
+TEST_CASE("applyConfigLine TRACK accepts valid WAV filename", "[config]") {
+    Config cfg = DEFAULT_CONFIG;
+    REQUIRE(applyConfigLine(cfg, "TRACK=MYSONG.WAV"));
+    REQUIRE(strcmp(cfg.singleTrack, "MYSONG.WAV") == 0);
+}
+
+TEST_CASE("applyConfigLine TRACK rejects non-WAV filename", "[config]") {
+    Config cfg = DEFAULT_CONFIG;
+    REQUIRE_FALSE(applyConfigLine(cfg, "TRACK=MYSONG.MP3"));
+    REQUIRE(cfg.singleTrack[0] == '\0');
+}
+
+TEST_CASE("applyConfigLine TRACK rejects filename that exceeds 8.3 length", "[config]") {
+    Config cfg = DEFAULT_CONFIG;
+    REQUIRE_FALSE(applyConfigLine(cfg, "TRACK=TOOLONGNAME.WAV"));
+    REQUIRE(cfg.singleTrack[0] == '\0');
 }
 
 TEST_CASE("applyConfigLine trims spaces around key and value", "[config]") {
     Config cfg = DEFAULT_CONFIG;
     REQUIRE(applyConfigLine(cfg, "VOLUME = 5 ")); REQUIRE(cfg.volume == 5);
-    REQUIRE(applyConfigLine(cfg, "MODE = SEQUENTIAL ")); REQUIRE_FALSE(cfg.randomMode);
+    REQUIRE(applyConfigLine(cfg, "MODE = SEQUENTIAL ")); REQUIRE(cfg.mode == MODE_SEQUENTIAL);
 }
 
 TEST_CASE("applyConfigLine applies multiple lines in sequence", "[config]") {
     Config cfg = DEFAULT_CONFIG;
     applyConfigLine(cfg, "VOLUME=2");
-    applyConfigLine(cfg, "MODE=SEQUENTIAL");
+    applyConfigLine(cfg, "MODE=SINGLE");
+    applyConfigLine(cfg, "TRACK=BOOT.WAV");
     REQUIRE(cfg.volume == 2);
-    REQUIRE_FALSE(cfg.randomMode);
+    REQUIRE(cfg.mode == MODE_SINGLE);
+    REQUIRE(strcmp(cfg.singleTrack, "BOOT.WAV") == 0);
 }
 
 // --- resolveSequentialIndex ---
