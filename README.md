@@ -277,7 +277,7 @@ VOLUME=5
 MODE=SEQUENTIAL
 ```
 
-**MODE=RANDOM** — picks a random WAV file each time the car starts (reservoir sampling, uniform distribution).
+**MODE=RANDOM** — picks a random WAV file each time the car starts (reservoir sampling, uniform distribution). The last played track is remembered in EEPROM so the same file is never picked twice in a row. If only one file is on the card it plays every time regardless.
 
 **MODE=SEQUENTIAL** — plays WAV files in the order the SD card returns them, advancing by one track each ignition cycle. The current position is stored in the Nano's EEPROM so it survives power-off.
 

@@ -9,7 +9,8 @@
 const uint8_t SD_CS_PIN          = 4;
 const uint8_t SPEAKER_PIN        = 9;
 const int     NOISE_PIN          = A0;   // intentionally unconnected — reads electrical noise for random seed
-const uint8_t EEPROM_TRACK_ADDR  = 0;   // stores sequential mode play index across power cycles
+const uint8_t EEPROM_TRACK_ADDR       = 0;    // sequential mode: play index (1 byte)
+const uint8_t EEPROM_LAST_PLAYED_ADDR = 1;    // random mode: last played filename (TRACK_NAME_LEN bytes)
 
 enum ErrorCode {
   SD_INIT_FAILED  = 2,
@@ -74,28 +75,59 @@ Config loadConfig() {
 }
 
 void pickWav(char* trackName, const Config& cfg) {
-  if (cfg.randomMode) pickRandomWav(trackName);
-  else                pickSequentialWav(trackName);
+  if (cfg.randomMode) {
+    char lastPlayed[TRACK_NAME_LEN];
+    readLastPlayed(lastPlayed);
+    pickRandomWav(trackName, lastPlayed);
+    writeLastPlayed(trackName);
+  } else {
+    pickSequentialWav(trackName);
+  }
 }
 
-void pickRandomWav(char* trackName) {
-  uint8_t wavFilesScanned = 0;
+void readLastPlayed(char* name) {
+  for (uint8_t i = 0; i < TRACK_NAME_LEN; i++)
+    name[i] = (char)EEPROM.read(EEPROM_LAST_PLAYED_ADDR + i);
+  name[TRACK_NAME_LEN - 1] = '\0';
+}
+
+void writeLastPlayed(const char* name) {
+  for (uint8_t i = 0; i < TRACK_NAME_LEN; i++)
+    EEPROM.write(EEPROM_LAST_PLAYED_ADDR + i, (uint8_t)name[i]);
+}
+
+void pickRandomWav(char* trackName, const char* lastPlayed) {
+  uint8_t scanned = 0;
+  char fallback[TRACK_NAME_LEN] = "";
+
   File rootDir = SD.open("/");
   if (!rootDir) haltWithErrorCode(ROOT_DIR_FAILED);
   while (true) {
     File entry = rootDir.openNextFile();
     if (!entry) break;
     if (!entry.isDirectory() && isWav(entry.name())) {
-      wavFilesScanned++;
-      if (reservoirShouldReplace(wavFilesScanned, random)) {
-        strncpy(trackName, entry.name(), TRACK_NAME_LEN - 1);
-        trackName[TRACK_NAME_LEN - 1] = '\0';
+      if (fallback[0] == '\0') {
+        strncpy(fallback, entry.name(), TRACK_NAME_LEN - 1);
+        fallback[TRACK_NAME_LEN - 1] = '\0';
+      }
+      if (!shouldSkipForAntiRepeat(entry.name(), lastPlayed)) {
+        scanned++;
+        if (reservoirShouldReplace(scanned, random)) {
+          strncpy(trackName, entry.name(), TRACK_NAME_LEN - 1);
+          trackName[TRACK_NAME_LEN - 1] = '\0';
+        }
       }
     }
     entry.close();
   }
   rootDir.close();
-  if (wavFilesScanned == 0) haltWithErrorCode(NO_WAV_FILES);
+
+  if (fallback[0] == '\0') haltWithErrorCode(NO_WAV_FILES);
+  // Only one file and it was the last played — no alternative, repeat it
+  if (scanned == 0) {
+    strncpy(trackName, fallback, TRACK_NAME_LEN - 1);
+    trackName[TRACK_NAME_LEN - 1] = '\0';
+  }
 }
 
 uint8_t countWavFiles() {

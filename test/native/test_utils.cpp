@@ -158,6 +158,30 @@ TEST_CASE("nextSequentialIndex returns 0 when total is 0", "[sequential]") {
     REQUIRE(nextSequentialIndex(0, 0) == 0);
 }
 
+// --- shouldSkipForAntiRepeat ---
+
+TEST_CASE("shouldSkipForAntiRepeat skips when name matches lastPlayed", "[antirepeat]") {
+    REQUIRE(shouldSkipForAntiRepeat("SONG.WAV", "SONG.WAV"));
+}
+
+TEST_CASE("shouldSkipForAntiRepeat does not skip a different track", "[antirepeat]") {
+    REQUIRE_FALSE(shouldSkipForAntiRepeat("SONG.WAV", "OTHER.WAV"));
+}
+
+TEST_CASE("shouldSkipForAntiRepeat does not skip on first boot (empty lastPlayed)", "[antirepeat]") {
+    REQUIRE_FALSE(shouldSkipForAntiRepeat("SONG.WAV", ""));
+}
+
+TEST_CASE("shouldSkipForAntiRepeat is case-sensitive (SD filenames are uppercase)", "[antirepeat]") {
+    REQUIRE_FALSE(shouldSkipForAntiRepeat("SONG.WAV", "song.wav"));
+}
+
+TEST_CASE("shouldSkipForAntiRepeat single-file edge case: only file is last played", "[antirepeat]") {
+    // When the only WAV matches lastPlayed, shouldSkip returns true for it.
+    // pickRandomWav detects scanned==0 and falls back to playing it anyway.
+    REQUIRE(shouldSkipForAntiRepeat("ONLY.WAV", "ONLY.WAV"));
+}
+
 // --- reservoirShouldReplace ---
 
 static long always_zero(long)    { return 0; }

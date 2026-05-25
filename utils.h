@@ -62,6 +62,12 @@ inline bool applyConfigLine(Config& cfg, const char* line) {
   return false;
 }
 
+// Returns true when name should be excluded from random selection.
+// An empty or uninitialized lastPlayed (first boot: 0xFF bytes) will never match a valid filename.
+inline bool shouldSkipForAntiRepeat(const char* name, const char* lastPlayed) {
+  return lastPlayed[0] != '\0' && strcmp(name, lastPlayed) == 0;
+}
+
 // Maps a stored EEPROM index to a valid play index, handling first-boot (0xFF) and wrap.
 inline uint8_t resolveSequentialIndex(uint8_t stored, uint8_t total) {
   if (total == 0) return 0;
