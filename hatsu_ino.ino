@@ -9,7 +9,7 @@
 const uint8_t  SD_CS_PIN               = 4;
 const uint8_t  SPEAKER_PIN             = 9;
 const int      NOISE_PIN               = A0;   // intentionally unconnected — reads electrical noise for random seed
-const uint8_t  EEPROM_TRACK_ADDR       = 0;    // sequential mode: play index (1 byte)
+const uint8_t  EEPROM_SEQ_INDEX_ADDR   = 0;    // sequential mode: play index (1 byte)
 const uint8_t  EEPROM_LAST_PLAYED_ADDR = 1;    // random mode: last played filename (TRACK_NAME_LEN bytes)
 const uint8_t  EEPROM_SHUFFLE_MASK_ADDR = (uint8_t)(EEPROM_LAST_PLAYED_ADDR + TRACK_NAME_LEN); // shuffle mode: bitmask (1 byte)
 
@@ -30,10 +30,10 @@ enum ErrorCode {
 };
 
 TMRpcm player;
-bool          playbackObserved = false;
+bool          wasPlaying = false;
 unsigned long playbackDeadline = 0;
-uint8_t       repeatsDone      = 0;
-uint8_t       repeatTarget     = 1;
+uint8_t       playsDone      = 0;
+uint8_t       playsTarget     = 1;
 char          currentTrack[TRACK_NAME_LEN] = "";
 
 void enterPowerDownSleep() __attribute__((noreturn));
@@ -45,7 +45,7 @@ void setup() {
   initSD();
 
   Config cfg = loadConfig();
-  repeatTarget = cfg.repeat;
+  playsTarget = cfg.playCount;
 
   if (cfg.delaySeconds > 0) delay((unsigned long)cfg.delaySeconds * 1000UL);
 
@@ -59,17 +59,17 @@ void setup() {
 
 void loop() {
   if (player.isPlaying()) {
-    playbackObserved = true;
+    wasPlaying = true;
     digitalWrite(LED_BUILTIN, (millis() % 1000UL < 100UL) ? HIGH : LOW);
     return;
   }
 
   digitalWrite(LED_BUILTIN, LOW);
 
-  if (playbackObserved) {
-    playbackObserved = false;
-    repeatsDone++;
-    if (repeatsDone >= repeatTarget) enterPowerDownSleep();
+  if (wasPlaying) {
+    wasPlaying = false;
+    playsDone++;
+    if (playsDone >= playsTarget) enterPowerDownSleep();
     player.play(currentTrack);
     playbackDeadline = millis() + PLAYBACK_WATCHDOG_MS;
     return;
@@ -223,7 +223,7 @@ uint8_t countWavFiles(uint8_t minSizeKb) {
 }
 
 void pickSequentialWav(char* trackName, uint8_t minSizeKb) {
-  uint8_t stored = EEPROM.read(EEPROM_TRACK_ADDR);
+  uint8_t stored = EEPROM.read(EEPROM_SEQ_INDEX_ADDR);
   uint8_t total = 0;
   char firstFile[TRACK_NAME_LEN] = "";
   trackName[0] = '\0';
@@ -245,7 +245,7 @@ void pickSequentialWav(char* trackName, uint8_t minSizeKb) {
   if (total == 0) haltWithErrorCode(NO_WAV_FILES);
   uint8_t idx = resolveSequentialIndex(stored, total);
   if (trackName[0] == '\0') copyTrackName(trackName, firstFile);
-  EEPROM.write(EEPROM_TRACK_ADDR, nextSequentialIndex(idx, total));
+  EEPROM.write(EEPROM_SEQ_INDEX_ADDR, nextSequentialIndex(idx, total));
 }
 
 void pickShuffleWav(char* trackName, uint8_t minSizeKb) {

@@ -57,7 +57,7 @@ struct Config {
   char singleTrack[TRACK_NAME_LEN];
   uint8_t delaySeconds;
   uint8_t minSizeKb;
-  uint8_t repeat;       // how many times to play the chosen track (minimum 1)
+  uint8_t playCount;    // total times to play the chosen track (minimum 1)
 };
 
 static const Config DEFAULT_CONFIG = {6, MODE_RANDOM, "", 0, 0, 1};
@@ -117,7 +117,7 @@ inline bool applyConfigLine(Config& cfg, const char* line) {
   }
   if (strcasecmp(key, "REPEAT") == 0) {
     int v = atoi(value);
-    if (v >= 1 && v <= 255) { cfg.repeat = (uint8_t)v; return true; }
+    if (v >= 1 && v <= 255) { cfg.playCount = (uint8_t)v; return true; }
     return false;
   }
   if (strcasecmp(key, "TRACK") == 0) {

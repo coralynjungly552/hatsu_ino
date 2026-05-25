@@ -156,21 +156,21 @@ TEST_CASE("trimRight does nothing on empty string", "[trimright]") {
 
 TEST_CASE("applyConfigLine REPEAT accepts valid range", "[config]") {
     Config cfg = DEFAULT_CONFIG;
-    REQUIRE(applyConfigLine(cfg, "REPEAT=1"));   REQUIRE(cfg.repeat == 1);
-    REQUIRE(applyConfigLine(cfg, "REPEAT=3"));   REQUIRE(cfg.repeat == 3);
-    REQUIRE(applyConfigLine(cfg, "REPEAT=255")); REQUIRE(cfg.repeat == 255);
+    REQUIRE(applyConfigLine(cfg, "REPEAT=1"));   REQUIRE(cfg.playCount == 1);
+    REQUIRE(applyConfigLine(cfg, "REPEAT=3"));   REQUIRE(cfg.playCount == 3);
+    REQUIRE(applyConfigLine(cfg, "REPEAT=255")); REQUIRE(cfg.playCount == 255);
 }
 
 TEST_CASE("applyConfigLine REPEAT rejects zero and out-of-range", "[config]") {
     Config cfg = DEFAULT_CONFIG;
     REQUIRE_FALSE(applyConfigLine(cfg, "REPEAT=0"));
     REQUIRE_FALSE(applyConfigLine(cfg, "REPEAT=256"));
-    REQUIRE(cfg.repeat == 1);
+    REQUIRE(cfg.playCount == 1);
 }
 
 TEST_CASE("applyConfigLine REPEAT default is 1", "[config]") {
     Config cfg = DEFAULT_CONFIG;
-    REQUIRE(cfg.repeat == 1);
+    REQUIRE(cfg.playCount == 1);
 }
 
 // --- applyConfigLine MIN_SIZE ---
