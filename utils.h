@@ -1,12 +1,25 @@
 #pragma once
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 
-const size_t TRACK_NAME_LEN = 13;   // 8.3 format: max 12 chars + null
+const size_t TRACK_NAME_LEN    = 13;   // 8.3 format: max 12 chars + null
+const size_t WAV_HEADER_MIN_SIZE = 12; // RIFF(4) + size(4) + WAVE(4)
 
 inline bool isWav(const char* filename) {
   size_t len = strlen(filename);
   return len > 4 && strcasecmp(filename + len - 4, ".WAV") == 0;
+}
+
+// Checks the 12-byte RIFF/WAVE magic at the start of a WAV file.
+inline bool isValidWavHeader(const uint8_t* header) {
+  return header[0]=='R' && header[1]=='I' && header[2]=='F' && header[3]=='F' &&
+         header[8]=='W' && header[9]=='A' && header[10]=='V' && header[11]=='E';
+}
+
+// Returns false if the file is smaller than minSizeKb kilobytes (0 = no filter).
+inline bool meetsMinSize(uint32_t fileSize, uint8_t minSizeKb) {
+  return minSizeKb == 0 || fileSize >= (uint32_t)minSizeKb * 1024;
 }
 
 // Reservoir sampling: P(replace) = 1/n, giving uniform selection over all candidates.
@@ -28,9 +41,10 @@ struct Config {
   PlayMode mode;
   char singleTrack[TRACK_NAME_LEN];
   uint8_t delaySeconds;
+  uint8_t minSizeKb;
 };
 
-static const Config DEFAULT_CONFIG = {6, MODE_RANDOM, "", 0};
+static const Config DEFAULT_CONFIG = {6, MODE_RANDOM, "", 0, 0};
 
 // Parses one "KEY=VALUE" line from CONFIG.TXT and applies it to cfg.
 // Returns true if the key was recognized and the value was valid.
@@ -71,6 +85,11 @@ inline bool applyConfigLine(Config& cfg, const char* line) {
   if (strcasecmp(key, "DELAY") == 0) {
     int v = atoi(value);
     if (v >= 0 && v <= 255) { cfg.delaySeconds = (uint8_t)v; return true; }
+    return false;
+  }
+  if (strcasecmp(key, "MIN_SIZE") == 0) {
+    int v = atoi(value);
+    if (v >= 0 && v <= 255) { cfg.minSizeKb = (uint8_t)v; return true; }
     return false;
   }
   if (strcasecmp(key, "TRACK") == 0) {

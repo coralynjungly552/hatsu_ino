@@ -226,10 +226,13 @@ Click **Upload** (→ arrow button). The IDE will compile and flash the sketch. 
 1. Format the SD card as FAT32
 2. Copy any `.wav` files to the root directory
 3. Optionally create a `CONFIG.TXT` to customize behaviour (see below)
-4. On error, the built-in LED will blink in a repeating pattern:
-   - **2 blinks** = SD card failed to initialize (check wiring or reformat)
-   - **3 blinks** = no `.wav` files found on the SD card
+4. On error, the built-in LED blinks the error code 3 times then the device enters deep sleep to prevent battery drain:
+   - **2 blinks** = SD card failed to initialize after 3 retries (check wiring or reformat)
+   - **3 blinks** = no `.wav` files found, file missing, or invalid WAV format
    - **4 blinks** = SD root directory failed to open (try reformatting)
+   - **5 blinks** = playback watchdog — track was selected but never started playing
+
+During normal playback the built-in LED pulses briefly once per second to confirm the device is alive.
 
 ### File naming rules
 
@@ -270,6 +273,7 @@ Place a file named `CONFIG.TXT` in the root of the SD card to customise behaviou
 | `VOLUME` | `0` – `7` | `6` | Playback volume (0 = silent, 7 = max) |
 | `MODE` | `RANDOM` / `SEQUENTIAL` / `SINGLE` | `RANDOM` | Track selection mode |
 | `DELAY` | `0` – `255` | `0` | Seconds to wait after power-up before playing |
+| `MIN_SIZE` | `0` – `255` | `0` | Skip WAV files smaller than N kilobytes (0 = no filter) |
 | `TRACK` | any valid WAV filename | *(none)* | File to play in `SINGLE` mode |
 
 **Example:**

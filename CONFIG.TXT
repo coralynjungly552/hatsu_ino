@@ -8,6 +8,10 @@ VOLUME=6
 # Seconds to wait after power-up before playing (0–255). Default: 0
 # DELAY=3
 
+# Skip WAV files smaller than N kilobytes (0 = no filter). Default: 0
+# Useful to ignore accidental near-empty files or macOS metadata files.
+# MIN_SIZE=16
+
 # Playback mode:
 #   RANDOM     - picks a random WAV file each ignition cycle,
 #                never repeating the same track twice in a row (default)

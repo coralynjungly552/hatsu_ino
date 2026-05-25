@@ -48,6 +48,69 @@ TEST_CASE("isWav rejects lone dot", "[isWav]") {
     REQUIRE_FALSE(isWav("."));
 }
 
+// --- isValidWavHeader ---
+
+TEST_CASE("isValidWavHeader accepts valid RIFF/WAVE header", "[wavheader]") {
+    uint8_t h[12] = {'R','I','F','F', 0,0,0,0, 'W','A','V','E'};
+    REQUIRE(isValidWavHeader(h));
+}
+
+TEST_CASE("isValidWavHeader rejects wrong RIFF magic", "[wavheader]") {
+    uint8_t h[12] = {'R','I','F','X', 0,0,0,0, 'W','A','V','E'};
+    REQUIRE_FALSE(isValidWavHeader(h));
+}
+
+TEST_CASE("isValidWavHeader rejects wrong WAVE magic", "[wavheader]") {
+    uint8_t h[12] = {'R','I','F','F', 0,0,0,0, 'W','A','V','X'};
+    REQUIRE_FALSE(isValidWavHeader(h));
+}
+
+TEST_CASE("isValidWavHeader rejects all-zero header", "[wavheader]") {
+    uint8_t h[12] = {};
+    REQUIRE_FALSE(isValidWavHeader(h));
+}
+
+// --- meetsMinSize ---
+
+TEST_CASE("meetsMinSize allows any size when minSizeKb is 0", "[minsize]") {
+    REQUIRE(meetsMinSize(0, 0));
+    REQUIRE(meetsMinSize(100, 0));
+}
+
+TEST_CASE("meetsMinSize rejects files below threshold", "[minsize]") {
+    REQUIRE_FALSE(meetsMinSize(1023, 1));
+}
+
+TEST_CASE("meetsMinSize accepts files at or above threshold", "[minsize]") {
+    REQUIRE(meetsMinSize(1024, 1));
+    REQUIRE(meetsMinSize(2048, 1));
+}
+
+TEST_CASE("meetsMinSize handles larger thresholds", "[minsize]") {
+    REQUIRE(meetsMinSize(16384, 16));
+    REQUIRE_FALSE(meetsMinSize(16383, 16));
+}
+
+// --- applyConfigLine MIN_SIZE ---
+
+TEST_CASE("applyConfigLine MIN_SIZE accepts valid range", "[config]") {
+    Config cfg = DEFAULT_CONFIG;
+    REQUIRE(applyConfigLine(cfg, "MIN_SIZE=0"));   REQUIRE(cfg.minSizeKb == 0);
+    REQUIRE(applyConfigLine(cfg, "MIN_SIZE=16"));  REQUIRE(cfg.minSizeKb == 16);
+    REQUIRE(applyConfigLine(cfg, "MIN_SIZE=255")); REQUIRE(cfg.minSizeKb == 255);
+}
+
+TEST_CASE("applyConfigLine MIN_SIZE rejects out-of-range values", "[config]") {
+    Config cfg = DEFAULT_CONFIG;
+    REQUIRE_FALSE(applyConfigLine(cfg, "MIN_SIZE=256"));
+    REQUIRE(cfg.minSizeKb == 0);
+}
+
+TEST_CASE("applyConfigLine MIN_SIZE default is 0", "[config]") {
+    Config cfg = DEFAULT_CONFIG;
+    REQUIRE(cfg.minSizeKb == 0);
+}
+
 // --- applyConfigLine ---
 
 TEST_CASE("applyConfigLine ignores blank and comment lines", "[config]") {
