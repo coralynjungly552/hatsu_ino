@@ -1,0 +1,11 @@
+# hatsu_ino configuration
+# Copy this file to the root of your SD card.
+# Lines starting with # are comments and are ignored.
+
+# Volume: 0 (silent) to 7 (max). Default: 6
+VOLUME=6
+
+# Playback mode:
+#   RANDOM     - picks a random WAV file each ignition cycle (default)
+#   SEQUENTIAL - plays WAV files in order, advancing one track per cycle
+MODE=RANDOM

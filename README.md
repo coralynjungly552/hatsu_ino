@@ -261,7 +261,7 @@ ffmpeg -i input.mp3 -ar 16000 -ac 1 -acodec pcm_u8 MELODY.WAV
 
 ### CONFIG.TXT
 
-Place a file named `CONFIG.TXT` in the root of the SD card to customise behaviour without reflashing. The file is optional — if absent, defaults apply.
+Place a file named `CONFIG.TXT` in the root of the SD card to customise behaviour without reflashing. The file is optional — if absent, defaults apply. A ready-to-use template is included in the repository as `CONFIG.TXT`.
 
 **Format:** one `KEY=VALUE` pair per line. Lines starting with `#` are treated as comments and ignored. Spaces around the `=` are allowed.
 
