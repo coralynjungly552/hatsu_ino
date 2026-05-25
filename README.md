@@ -37,6 +37,14 @@ When your car's ignition turns on, hatsu_ino detects the power-up and plays a WA
 | Car wiring tap or splice connector | Connecting to the ignition-switched power line |
 | Patience and time | Required in generous amounts |
 
+## Code structure
+
+| File | Role |
+|---|---|
+| `hatsu_ino.ino` | Arduino entry point — hardware setup, SD init, sleep, LED error codes. Thin glue; contains no logic of its own. Named after the project because the Arduino IDE requires the sketch file to match its containing folder. |
+| `logic.h` | All testable domain logic — config parsing, track selection (random, sequential, shuffle, single), WAV validation, EEPROM index math. Pure C++; no Arduino dependencies. |
+| `test/native/test_logic.cpp` | Host-side Catch2 tests for everything in `logic.h`. |
+
 ## How it works
 
 1. Car ignition supplies power → either 12V through the LM2596 buck converter (stepped down to 5V), or directly from an existing 5V source

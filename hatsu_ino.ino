@@ -4,7 +4,7 @@
 #include <EEPROM.h>
 #include <avr/sleep.h>
 #include <avr/power.h>
-#include "utils.h"
+#include "logic.h"
 
 const uint8_t  SD_CS_PIN               = 4;
 const uint8_t  SPEAKER_PIN             = 9;
