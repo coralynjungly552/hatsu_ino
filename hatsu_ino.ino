@@ -300,6 +300,7 @@ void enterPowerDownSleep() {
   sleep_enable();
   power_all_disable();
   sleep_mode();
+  while (true);
 }
 
 void haltWithErrorCode(ErrorCode code) {
