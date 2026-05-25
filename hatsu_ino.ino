@@ -179,7 +179,7 @@ void readLastPlayed(char* name) {
 
 void writeLastPlayed(const char* name) {
   for (uint8_t i = 0; i < TRACK_NAME_LEN; i++)
-    EEPROM.write(EEPROM_LAST_PLAYED_ADDR + i, (uint8_t)name[i]);
+    EEPROM.update(EEPROM_LAST_PLAYED_ADDR + i, (uint8_t)name[i]);
 }
 
 void pickRandomWav(char* trackName, const char* lastPlayed, uint8_t minSizeKb) {
@@ -245,7 +245,7 @@ void pickSequentialWav(char* trackName, uint8_t minSizeKb) {
   if (total == 0) haltWithErrorCode(NO_WAV_FILES);
   uint8_t idx = resolveSequentialIndex(stored, total);
   if (trackName[0] == '\0') copyTrackName(trackName, firstFile);
-  EEPROM.write(EEPROM_SEQ_INDEX_ADDR, nextSequentialIndex(idx, total));
+  EEPROM.update(EEPROM_SEQ_INDEX_ADDR, nextSequentialIndex(idx, total));
 }
 
 void pickShuffleWav(char* trackName, uint8_t minSizeKb) {
@@ -275,7 +275,7 @@ void pickShuffleWav(char* trackName, uint8_t minSizeKb) {
   }
 
   fetchFileAtIndex(trackName, selectedIdx, minSizeKb);
-  EEPROM.write(EEPROM_SHUFFLE_MASK_ADDR, shuffleMarkPlayed(mask, selectedIdx));
+  EEPROM.update(EEPROM_SHUFFLE_MASK_ADDR, shuffleMarkPlayed(mask, selectedIdx));
 }
 
 void pickSingleWav(char* trackName, const char* singleTrack) {
