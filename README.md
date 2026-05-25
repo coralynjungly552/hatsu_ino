@@ -224,8 +224,9 @@ Click **Upload** (→ arrow button). The IDE will compile and flash the sketch. 
 ### Setup
 
 1. Format the SD card as FAT32
-2. Copy any `.wav` files to the root directory — a random one will be picked each time the car starts
-3. On error, the built-in LED will blink in a repeating pattern:
+2. Copy any `.wav` files to the root directory
+3. Optionally create a `CONFIG.TXT` to customize behaviour (see below)
+4. On error, the built-in LED will blink in a repeating pattern:
    - **2 blinks** = SD card failed to initialize (check wiring or reformat)
    - **3 blinks** = no `.wav` files found on the SD card
    - **4 blinks** = SD root directory failed to open (try reformatting)
@@ -258,13 +259,35 @@ You can convert any audio file using ffmpeg:
 ffmpeg -i input.mp3 -ar 16000 -ac 1 -acodec pcm_u8 MELODY.WAV
 ```
 
+### CONFIG.TXT
+
+Place a file named `CONFIG.TXT` in the root of the SD card to customise behaviour without reflashing. The file is optional — if absent, defaults apply.
+
+**Format:** one `KEY=VALUE` pair per line. Lines starting with `#` are treated as comments and ignored. Spaces around the `=` are allowed.
+
+| Key | Values | Default | Description |
+|---|---|---|---|
+| `VOLUME` | `0` – `7` | `6` | Playback volume (0 = silent, 7 = max) |
+| `MODE` | `RANDOM` / `SEQUENTIAL` | `RANDOM` | Track selection mode |
+
+**Example:**
+```
+# hatsu_ino config
+VOLUME=5
+MODE=SEQUENTIAL
+```
+
+**MODE=RANDOM** — picks a random WAV file each time the car starts (reservoir sampling, uniform distribution).
+
+**MODE=SEQUENTIAL** — plays WAV files in the order the SD card returns them, advancing by one track each ignition cycle. The current position is stored in the Nano's EEPROM so it survives power-off.
+
 ## Testing
 
 There are two test suites:
 
 ### Native tests (CI)
 
-Tests for all pure logic (`isWav()`, reservoir sampling) compiled and run on the host with [Catch2](https://github.com/catchorg/Catch2). These run automatically on every push via GitHub Actions.
+Tests for all pure logic (`isWav()`, reservoir sampling, config parsing, sequential index resolution) compiled and run on the host with [Catch2](https://github.com/catchorg/Catch2). These run automatically on every push via GitHub Actions.
 
 To run locally:
 ```bash
