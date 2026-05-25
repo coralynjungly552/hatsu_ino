@@ -75,9 +75,9 @@ inline bool applyConfigLine(Config& cfg, const char* line) {
   if (!eq) return false;
 
   size_t keyLen = (size_t)(eq - line);
-  if (keyLen == 0 || keyLen >= 16) return false;
-
   char key[16];
+  if (keyLen == 0 || keyLen >= sizeof(key)) return false;
+
   strncpy(key, line, keyLen);
   key[keyLen] = '\0';
   for (int i = (int)keyLen - 1; i >= 0 && key[i] == ' '; i--) key[i] = '\0';
@@ -85,8 +85,8 @@ inline bool applyConfigLine(Config& cfg, const char* line) {
   const char* valueStart = eq + 1;
   while (*valueStart == ' ') valueStart++;
   char value[16];
-  strncpy(value, valueStart, 15);
-  value[15] = '\0';
+  strncpy(value, valueStart, sizeof(value) - 1);
+  value[sizeof(value) - 1] = '\0';
   for (int i = (int)strlen(value) - 1; i >= 0 && value[i] == ' '; i--) value[i] = '\0';
 
   if (strcasecmp(key, "VOLUME") == 0) {

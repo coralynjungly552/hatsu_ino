@@ -280,9 +280,6 @@ void pickShuffleWav(char* trackName, uint8_t minSizeKb) {
 
 void pickSingleWav(char* trackName, const char* singleTrack) {
   if (singleTrack[0] == '\0') haltWithErrorCode(NO_WAV_FILES);
-  File f = SD.open(singleTrack);
-  if (!f) haltWithErrorCode(NO_WAV_FILES);
-  f.close();
   copyTrackName(trackName, singleTrack);
 }
 
