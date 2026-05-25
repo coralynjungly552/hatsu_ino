@@ -86,10 +86,10 @@ inline bool applyConfigLine(Config& cfg, const char* line) {
   key[keyLen] = '\0';
   for (int i = (int)keyLen - 1; i >= 0 && key[i] == ' '; i--) key[i] = '\0';
 
-  const char* vp = eq + 1;
-  while (*vp == ' ') vp++;
+  const char* valueStart = eq + 1;
+  while (*valueStart == ' ') valueStart++;
   char value[16];
-  strncpy(value, vp, 15);
+  strncpy(value, valueStart, 15);
   value[15] = '\0';
   for (int i = (int)strlen(value) - 1; i >= 0 && value[i] == ' '; i--) value[i] = '\0';
 
@@ -127,6 +127,11 @@ inline bool applyConfigLine(Config& cfg, const char* line) {
     return true;
   }
   return false;
+}
+
+inline void copyTrackName(char* dst, const char* src) {
+  strncpy(dst, src, TRACK_NAME_LEN - 1);
+  dst[TRACK_NAME_LEN - 1] = '\0';
 }
 
 // Returns true when name should be excluded from random selection.

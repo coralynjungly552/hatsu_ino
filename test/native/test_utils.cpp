@@ -323,6 +323,34 @@ TEST_CASE("nextSequentialIndex returns 0 when total is 0", "[sequential]") {
     REQUIRE(nextSequentialIndex(0, 0) == 0);
 }
 
+// --- copyTrackName ---
+
+TEST_CASE("copyTrackName copies a short name", "[copytrackname]") {
+    char dst[TRACK_NAME_LEN] = {};
+    copyTrackName(dst, "SONG.WAV");
+    REQUIRE(strcmp(dst, "SONG.WAV") == 0);
+}
+
+TEST_CASE("copyTrackName copies a max-length 8.3 name", "[copytrackname]") {
+    char dst[TRACK_NAME_LEN] = {};
+    copyTrackName(dst, "ABCDEFGH.WAV"); // 12 chars, fits in 13-byte buffer
+    REQUIRE(strcmp(dst, "ABCDEFGH.WAV") == 0);
+}
+
+TEST_CASE("copyTrackName always null-terminates", "[copytrackname]") {
+    char dst[TRACK_NAME_LEN];
+    memset(dst, 0xFF, sizeof(dst));
+    copyTrackName(dst, "A.WAV");
+    REQUIRE(dst[TRACK_NAME_LEN - 1] == '\0');
+}
+
+TEST_CASE("copyTrackName truncates source longer than TRACK_NAME_LEN-1", "[copytrackname]") {
+    char dst[TRACK_NAME_LEN] = {};
+    copyTrackName(dst, "TOOLONGNAME.WAV"); // 15 chars, exceeds buffer
+    REQUIRE(dst[TRACK_NAME_LEN - 1] == '\0');
+    REQUIRE(strlen(dst) == TRACK_NAME_LEN - 1);
+}
+
 // --- shouldSkipForAntiRepeat ---
 
 TEST_CASE("shouldSkipForAntiRepeat skips when name matches lastPlayed", "[antirepeat]") {

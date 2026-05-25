@@ -11,12 +11,12 @@ const uint8_t  SPEAKER_PIN             = 9;
 const int      NOISE_PIN               = A0;   // intentionally unconnected — reads electrical noise for random seed
 const uint8_t  EEPROM_TRACK_ADDR       = 0;    // sequential mode: play index (1 byte)
 const uint8_t  EEPROM_LAST_PLAYED_ADDR = 1;    // random mode: last played filename (TRACK_NAME_LEN bytes)
-const uint8_t  EEPROM_SHUFFLE_MASK_ADDR = 14;  // shuffle mode: played-tracks bitmask (1 byte)
+const uint8_t  EEPROM_SHUFFLE_MASK_ADDR = EEPROM_LAST_PLAYED_ADDR + TRACK_NAME_LEN; // shuffle mode: bitmask (1 byte)
 
 const uint8_t      SD_INIT_RETRIES       = 3;
 const unsigned long SD_RETRY_DELAY_MS    = 500;
 const unsigned long PLAYBACK_WATCHDOG_MS = 2000;
-const unsigned long FADE_STEP_MS         = 100;  // ms between volume steps during fade in
+const unsigned long FADE_STEP_MS         = 100;
 const uint8_t      ERROR_BLINK_CYCLES    = 3;
 
 enum ErrorCode {
@@ -30,12 +30,13 @@ const unsigned long BLINK_DURATION_MS = 200;
 const unsigned long BLINK_PAUSE_MS    = 800;
 
 TMRpcm player;
-bool          playbackObserved  = false;
-unsigned long playbackDeadline  = 0;
-uint8_t       repeatsDone       = 0;
-uint8_t       repeatTarget      = 1;
+bool          playbackObserved = false;
+unsigned long playbackDeadline = 0;
+uint8_t       repeatsDone      = 0;
+uint8_t       repeatTarget     = 1;
 char          currentTrack[TRACK_NAME_LEN] = "";
 
+void enterPowerDownSleep() __attribute__((noreturn));
 void haltWithErrorCode(ErrorCode code) __attribute__((noreturn));
 
 void setup() {
@@ -51,7 +52,7 @@ void setup() {
   char trackName[TRACK_NAME_LEN];
   pickWav(trackName, cfg);
   validateWavFile(trackName);
-  strncpy(currentTrack, trackName, TRACK_NAME_LEN);
+  copyTrackName(currentTrack, trackName);
 
   configureAndPlay(trackName, cfg.volume);
 }
@@ -68,10 +69,7 @@ void loop() {
   if (playbackObserved) {
     playbackObserved = false;
     repeatsDone++;
-    if (repeatsDone >= repeatTarget) {
-      enterPowerDownSleep();
-      return; // unreachable
-    }
+    if (repeatsDone >= repeatTarget) enterPowerDownSleep();
     player.play(currentTrack);
     playbackDeadline = millis() + PLAYBACK_WATCHDOG_MS;
     return;
@@ -126,6 +124,32 @@ void validateWavFile(const char* trackName) {
   if (!valid) haltWithErrorCode(NO_WAV_FILES);
 }
 
+bool isEligibleFile(File& entry, uint8_t minSizeKb) {
+  return !entry.isDirectory() && isWav(entry.name()) && meetsMinSize(entry.size(), minSizeKb);
+}
+
+void fetchFileAtIndex(char* trackName, uint8_t idx, uint8_t minSizeKb) {
+  trackName[0] = '\0';
+  File rootDir = SD.open("/");
+  if (!rootDir) haltWithErrorCode(ROOT_DIR_FAILED);
+  uint8_t position = 0;
+  while (true) {
+    File entry = rootDir.openNextFile();
+    if (!entry) break;
+    if (isEligibleFile(entry, minSizeKb)) {
+      if (position == idx) {
+        copyTrackName(trackName, entry.name());
+        entry.close();
+        break;
+      }
+      position++;
+    }
+    entry.close();
+  }
+  rootDir.close();
+  if (trackName[0] == '\0') haltWithErrorCode(NO_WAV_FILES);
+}
+
 void pickWav(char* trackName, const Config& cfg) {
   switch (cfg.mode) {
     case MODE_RANDOM: {
@@ -159,37 +183,28 @@ void writeLastPlayed(const char* name) {
 }
 
 void pickRandomWav(char* trackName, const char* lastPlayed, uint8_t minSizeKb) {
-  uint8_t scanned = 0;
-  char fallback[TRACK_NAME_LEN] = "";
+  uint8_t candidateCount = 0;
+  char firstEligible[TRACK_NAME_LEN] = "";
 
   File rootDir = SD.open("/");
   if (!rootDir) haltWithErrorCode(ROOT_DIR_FAILED);
   while (true) {
     File entry = rootDir.openNextFile();
     if (!entry) break;
-    if (!entry.isDirectory() && isWav(entry.name()) && meetsMinSize(entry.size(), minSizeKb)) {
-      if (fallback[0] == '\0') {
-        strncpy(fallback, entry.name(), TRACK_NAME_LEN - 1);
-        fallback[TRACK_NAME_LEN - 1] = '\0';
-      }
+    if (isEligibleFile(entry, minSizeKb)) {
+      if (firstEligible[0] == '\0') copyTrackName(firstEligible, entry.name());
       if (!shouldSkipForAntiRepeat(entry.name(), lastPlayed)) {
-        scanned++;
-        if (reservoirShouldReplace(scanned, random)) {
-          strncpy(trackName, entry.name(), TRACK_NAME_LEN - 1);
-          trackName[TRACK_NAME_LEN - 1] = '\0';
-        }
+        candidateCount++;
+        if (reservoirShouldReplace(candidateCount, random)) copyTrackName(trackName, entry.name());
       }
     }
     entry.close();
   }
   rootDir.close();
 
-  if (fallback[0] == '\0') haltWithErrorCode(NO_WAV_FILES);
+  if (firstEligible[0] == '\0') haltWithErrorCode(NO_WAV_FILES);
   // Only one qualifying file and it was the last played — no alternative, repeat it
-  if (scanned == 0) {
-    strncpy(trackName, fallback, TRACK_NAME_LEN - 1);
-    trackName[TRACK_NAME_LEN - 1] = '\0';
-  }
+  if (candidateCount == 0) copyTrackName(trackName, firstEligible);
 }
 
 uint8_t countWavFiles(uint8_t minSizeKb) {
@@ -199,7 +214,7 @@ uint8_t countWavFiles(uint8_t minSizeKb) {
   while (true) {
     File entry = rootDir.openNextFile();
     if (!entry) break;
-    if (!entry.isDirectory() && isWav(entry.name()) && meetsMinSize(entry.size(), minSizeKb)) count++;
+    if (isEligibleFile(entry, minSizeKb)) count++;
     entry.close();
   }
   rootDir.close();
@@ -213,27 +228,7 @@ void pickSequentialWav(char* trackName, uint8_t minSizeKb) {
   uint8_t stored = EEPROM.read(EEPROM_TRACK_ADDR);
   uint8_t idx    = resolveSequentialIndex(stored, total);
 
-  trackName[0] = '\0';
-  File rootDir = SD.open("/");
-  if (!rootDir) haltWithErrorCode(ROOT_DIR_FAILED);
-  uint8_t current = 0;
-  while (true) {
-    File entry = rootDir.openNextFile();
-    if (!entry) break;
-    if (!entry.isDirectory() && isWav(entry.name()) && meetsMinSize(entry.size(), minSizeKb)) {
-      if (current == idx) {
-        strncpy(trackName, entry.name(), TRACK_NAME_LEN - 1);
-        trackName[TRACK_NAME_LEN - 1] = '\0';
-        entry.close();
-        break;
-      }
-      current++;
-    }
-    entry.close();
-  }
-  rootDir.close();
-
-  if (trackName[0] == '\0') haltWithErrorCode(NO_WAV_FILES);
+  fetchFileAtIndex(trackName, idx, minSizeKb);
   EEPROM.write(EEPROM_TRACK_ADDR, nextSequentialIndex(idx, total));
 }
 
@@ -253,37 +248,16 @@ void pickShuffleWav(char* trackName, uint8_t minSizeKb) {
   uint8_t mask = EEPROM.read(EEPROM_SHUFFLE_MASK_ADDR);
   if (shuffleAllPlayed(mask, total)) mask = 0;
 
-  // Reservoir sampling over unplayed indices
-  uint8_t scanned     = 0;
-  uint8_t selectedIdx = 0;
+  uint8_t candidateCount = 0;
+  uint8_t selectedIdx    = 0;
   for (uint8_t i = 0; i < total; i++) {
     if (!shufflePlayed(mask, i)) {
-      scanned++;
-      if (reservoirShouldReplace(scanned, random)) selectedIdx = i;
+      candidateCount++;
+      if (reservoirShouldReplace(candidateCount, random)) selectedIdx = i;
     }
   }
 
-  trackName[0] = '\0';
-  File rootDir = SD.open("/");
-  if (!rootDir) haltWithErrorCode(ROOT_DIR_FAILED);
-  uint8_t current = 0;
-  while (true) {
-    File entry = rootDir.openNextFile();
-    if (!entry) break;
-    if (!entry.isDirectory() && isWav(entry.name()) && meetsMinSize(entry.size(), minSizeKb)) {
-      if (current == selectedIdx) {
-        strncpy(trackName, entry.name(), TRACK_NAME_LEN - 1);
-        trackName[TRACK_NAME_LEN - 1] = '\0';
-        entry.close();
-        break;
-      }
-      current++;
-    }
-    entry.close();
-  }
-  rootDir.close();
-
-  if (trackName[0] == '\0') haltWithErrorCode(NO_WAV_FILES);
+  fetchFileAtIndex(trackName, selectedIdx, minSizeKb);
   EEPROM.write(EEPROM_SHUFFLE_MASK_ADDR, shuffleMarkPlayed(mask, selectedIdx));
 }
 
@@ -292,15 +266,13 @@ void pickSingleWav(char* trackName, const char* singleTrack) {
   File f = SD.open(singleTrack);
   if (!f) haltWithErrorCode(NO_WAV_FILES);
   f.close();
-  strncpy(trackName, singleTrack, TRACK_NAME_LEN - 1);
-  trackName[TRACK_NAME_LEN - 1] = '\0';
+  copyTrackName(trackName, singleTrack);
 }
 
 void configureAndPlay(const char* trackName, uint8_t volume) {
   player.speakerPin = SPEAKER_PIN;
   player.volume(0);
   player.play(trackName);
-  // Fade in: ramp from 0 to target volume, one step per FADE_STEP_MS
   for (uint8_t v = 1; v <= volume; v++) {
     delay(FADE_STEP_MS);
     player.volume(v);
