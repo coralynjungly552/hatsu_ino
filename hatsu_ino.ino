@@ -17,6 +17,8 @@ const uint8_t      SD_INIT_RETRIES       = 3;
 const unsigned long SD_RETRY_DELAY_MS    = 500;
 const unsigned long PLAYBACK_WATCHDOG_MS = 2000;
 const unsigned long FADE_STEP_MS         = 100;
+const unsigned long BLINK_DURATION_MS    = 200;
+const unsigned long BLINK_PAUSE_MS       = 800;
 const uint8_t      ERROR_BLINK_CYCLES    = 3;
 const uint8_t      CONFIG_LINE_LEN       = 32;
 
@@ -26,9 +28,6 @@ enum ErrorCode {
   ROOT_DIR_FAILED  = 4,
   PLAYBACK_TIMEOUT = 5
 };
-
-const unsigned long BLINK_DURATION_MS = 200;
-const unsigned long BLINK_PAUSE_MS    = 800;
 
 TMRpcm player;
 bool          playbackObserved = false;
@@ -106,7 +105,7 @@ Config loadConfig() {
   while (f.available()) {
     char c = (char)f.read();
     if (c == '\n' || c == '\r') flush();
-    else if (pos < (uint8_t)(sizeof(line) - 1)) line[pos++] = c;
+    else if (pos < CONFIG_LINE_LEN - 1) line[pos++] = c;
   }
   flush();
   f.close();
@@ -184,6 +183,7 @@ void writeLastPlayed(const char* name) {
 }
 
 void pickRandomWav(char* trackName, const char* lastPlayed, uint8_t minSizeKb) {
+  trackName[0] = '\0';
   uint8_t candidateCount = 0;
   char firstEligible[TRACK_NAME_LEN] = "";
 

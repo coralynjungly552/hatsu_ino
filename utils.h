@@ -21,8 +21,7 @@ inline bool meetsMinSize(uint32_t fileSize, uint8_t minSizeKb) {
   return minSizeKb == 0 || fileSize >= (uint32_t)minSizeKb * 1024;
 }
 
-// Reservoir sampling: P(replace) = 1/n, giving uniform selection over all candidates.
-// Accepts a random function so the algorithm can be tested deterministically.
+// P(replace)=1/n for uniform selection; injectable fn enables deterministic testing.
 using RandomFn = long (*)(long);
 
 inline bool reservoirShouldReplace(uint8_t n, RandomFn randFn) {
