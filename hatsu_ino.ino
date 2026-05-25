@@ -32,6 +32,7 @@ void setup() {
   initSD();
 
   Config cfg = loadConfig();
+  if (cfg.delaySeconds > 0) delay((unsigned long)cfg.delaySeconds * 1000UL);
   char trackName[TRACK_NAME_LEN];
   pickWav(trackName, cfg);
   configureAndPlay(trackName, cfg.volume);

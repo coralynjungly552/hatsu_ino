@@ -269,6 +269,7 @@ Place a file named `CONFIG.TXT` in the root of the SD card to customise behaviou
 |---|---|---|---|
 | `VOLUME` | `0` – `7` | `6` | Playback volume (0 = silent, 7 = max) |
 | `MODE` | `RANDOM` / `SEQUENTIAL` / `SINGLE` | `RANDOM` | Track selection mode |
+| `DELAY` | `0` – `255` | `0` | Seconds to wait after power-up before playing |
 | `TRACK` | any valid WAV filename | *(none)* | File to play in `SINGLE` mode |
 
 **Example:**

@@ -147,6 +147,26 @@ TEST_CASE("applyConfigLine applies multiple lines in sequence", "[config]") {
     REQUIRE(strcmp(cfg.singleTrack, "BOOT.WAV") == 0);
 }
 
+// --- applyConfigLine DELAY ---
+
+TEST_CASE("applyConfigLine DELAY accepts valid range", "[config]") {
+    Config cfg = DEFAULT_CONFIG;
+    REQUIRE(applyConfigLine(cfg, "DELAY=0"));   REQUIRE(cfg.delaySeconds == 0);
+    REQUIRE(applyConfigLine(cfg, "DELAY=5"));   REQUIRE(cfg.delaySeconds == 5);
+    REQUIRE(applyConfigLine(cfg, "DELAY=255")); REQUIRE(cfg.delaySeconds == 255);
+}
+
+TEST_CASE("applyConfigLine DELAY rejects out-of-range values", "[config]") {
+    Config cfg = DEFAULT_CONFIG;
+    REQUIRE_FALSE(applyConfigLine(cfg, "DELAY=256"));
+    REQUIRE(cfg.delaySeconds == 0);
+}
+
+TEST_CASE("applyConfigLine DELAY default is 0", "[config]") {
+    Config cfg = DEFAULT_CONFIG;
+    REQUIRE(cfg.delaySeconds == 0);
+}
+
 // --- resolveSequentialIndex ---
 
 TEST_CASE("resolveSequentialIndex returns stored when within range", "[sequential]") {

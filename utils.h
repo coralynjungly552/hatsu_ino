@@ -27,9 +27,10 @@ struct Config {
   uint8_t volume;
   PlayMode mode;
   char singleTrack[TRACK_NAME_LEN];
+  uint8_t delaySeconds;
 };
 
-static const Config DEFAULT_CONFIG = {6, MODE_RANDOM, ""};
+static const Config DEFAULT_CONFIG = {6, MODE_RANDOM, "", 0};
 
 // Parses one "KEY=VALUE" line from CONFIG.TXT and applies it to cfg.
 // Returns true if the key was recognized and the value was valid.
@@ -65,6 +66,11 @@ inline bool applyConfigLine(Config& cfg, const char* line) {
     if (strcasecmp(value, "RANDOM") == 0)     { cfg.mode = MODE_RANDOM;     return true; }
     if (strcasecmp(value, "SEQUENTIAL") == 0) { cfg.mode = MODE_SEQUENTIAL; return true; }
     if (strcasecmp(value, "SINGLE") == 0)     { cfg.mode = MODE_SINGLE;     return true; }
+    return false;
+  }
+  if (strcasecmp(key, "DELAY") == 0) {
+    int v = atoi(value);
+    if (v >= 0 && v <= 255) { cfg.delaySeconds = (uint8_t)v; return true; }
     return false;
   }
   if (strcasecmp(key, "TRACK") == 0) {

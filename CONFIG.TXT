@@ -5,6 +5,9 @@
 # Volume: 0 (silent) to 7 (max). Default: 6
 VOLUME=6
 
+# Seconds to wait after power-up before playing (0–255). Default: 0
+# DELAY=3
+
 # Playback mode:
 #   RANDOM     - picks a random WAV file each ignition cycle,
 #                never repeating the same track twice in a row (default)
