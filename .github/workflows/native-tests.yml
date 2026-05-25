@@ -14,11 +14,26 @@ jobs:
           path: test/native/build/_deps
           key: catch2-v3.5.4-${{ runner.os }}
 
+      - name: Install gcovr
+        run: pip install gcovr
+
       - name: Configure
-        run: cmake -S test/native -B test/native/build
+        run: cmake -S test/native -B test/native/build -DCOVERAGE=ON
 
       - name: Build
         run: cmake --build test/native/build
 
       - name: Run tests
         run: ./test/native/build/tests
+
+      - name: Generate coverage report
+        run: |
+          gcovr -r . --filter 'utils\.h' --xml coverage.xml --print-summary \
+            test/native/build
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
