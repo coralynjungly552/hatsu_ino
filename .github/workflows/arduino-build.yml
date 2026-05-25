@@ -27,4 +27,4 @@ jobs:
           arduino-cli compile \
             --fqbn arduino:avr:nano:cpu=atmega328old \
             --warnings all \
-            hatsu_ino
+            .
