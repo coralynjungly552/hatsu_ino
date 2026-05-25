@@ -67,6 +67,10 @@ inline void copyTrackName(char* dst, const char* src) {
   dst[TRACK_NAME_LEN - 1] = '\0';
 }
 
+inline void trimRight(char* s, int len) {
+  for (int i = len - 1; i >= 0 && s[i] == ' '; i--) s[i] = '\0';
+}
+
 // Parses "KEY=VALUE" lines; skips blank lines and '#' comments; trims spaces.
 inline bool applyConfigLine(Config& cfg, const char* line) {
   if (!line || line[0] == '#' || line[0] == '\0') return false;
@@ -80,14 +84,14 @@ inline bool applyConfigLine(Config& cfg, const char* line) {
 
   strncpy(key, line, keyLen);
   key[keyLen] = '\0';
-  for (int i = (int)keyLen - 1; i >= 0 && key[i] == ' '; i--) key[i] = '\0';
+  trimRight(key, (int)keyLen);
 
   const char* valueStart = eq + 1;
   while (*valueStart == ' ') valueStart++;
   char value[16];
   strncpy(value, valueStart, sizeof(value) - 1);
   value[sizeof(value) - 1] = '\0';
-  for (int i = (int)strlen(value) - 1; i >= 0 && value[i] == ' '; i--) value[i] = '\0';
+  trimRight(value, (int)strlen(value));
 
   if (strcasecmp(key, "VOLUME") == 0) {
     int v = atoi(value);

@@ -126,6 +126,32 @@ TEST_CASE("shuffleAllPlayed returns false for edge cases", "[shuffle]") {
     REQUIRE_FALSE(shuffleAllPlayed(0b11111111, 9)); // exceeds SHUFFLE_MAX_TRACKS
 }
 
+// --- trimRight ---
+
+TEST_CASE("trimRight removes trailing spaces", "[trimright]") {
+    char s[] = "hello   ";
+    trimRight(s, (int)strlen(s));
+    REQUIRE(strcmp(s, "hello") == 0);
+}
+
+TEST_CASE("trimRight leaves string without trailing spaces unchanged", "[trimright]") {
+    char s[] = "hello";
+    trimRight(s, (int)strlen(s));
+    REQUIRE(strcmp(s, "hello") == 0);
+}
+
+TEST_CASE("trimRight handles all-spaces string", "[trimright]") {
+    char s[] = "   ";
+    trimRight(s, (int)strlen(s));
+    REQUIRE(s[0] == '\0');
+}
+
+TEST_CASE("trimRight does nothing on empty string", "[trimright]") {
+    char s[] = "";
+    trimRight(s, 0);
+    REQUIRE(s[0] == '\0');
+}
+
 // --- applyConfigLine REPEAT ---
 
 TEST_CASE("applyConfigLine REPEAT accepts valid range", "[config]") {
