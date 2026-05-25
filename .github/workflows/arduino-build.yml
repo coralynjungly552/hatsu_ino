@@ -1,0 +1,30 @@
+name: Arduino Build
+
+on: [push, pull_request]
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install arduino-cli
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Install AVR platform
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install arduino:avr
+
+      - name: Install libraries
+        run: |
+          arduino-cli lib update-index
+          arduino-cli lib install "SD"
+          arduino-cli lib install "TMRpcm"
+
+      - name: Compile sketch
+        run: |
+          arduino-cli compile \
+            --fqbn arduino:avr:nano:cpu=atmega328old \
+            --warnings all \
+            hatsu_ino
