@@ -11,7 +11,7 @@ const uint8_t  SPEAKER_PIN             = 9;
 const int      NOISE_PIN               = A0;   // intentionally unconnected — reads electrical noise for random seed
 const uint8_t  EEPROM_SEQ_INDEX_ADDR   = 0;    // sequential mode: play index (1 byte)
 const uint8_t  EEPROM_LAST_PLAYED_ADDR = 1;    // random mode: last played filename (TRACK_NAME_LEN bytes)
-const uint8_t  EEPROM_SHUFFLE_MASK_ADDR = (uint8_t)(EEPROM_LAST_PLAYED_ADDR + TRACK_NAME_LEN); // shuffle mode: bitmask (1 byte)
+const uint8_t  EEPROM_SHUFFLE_MASK_ADDR = (uint8_t)(EEPROM_LAST_PLAYED_ADDR + TRACK_NAME_LEN); // shuffle mode: bitmask (2 bytes, addr 14–15)
 
 const uint8_t      SD_INIT_RETRIES       = 3;
 const unsigned long SD_RETRY_DELAY_MS    = 500;
@@ -253,7 +253,7 @@ void pickShuffleWav(char* trackName, uint8_t minSizeKb) {
   uint8_t total = countWavFiles(minSizeKb);
   if (total == 0) haltWithErrorCode(NO_WAV_FILES);
 
-  // More than 8 tracks: fall back to anti-repeat random
+  // More than 16 tracks: fall back to anti-repeat random
   if (total > SHUFFLE_MAX_TRACKS) {
     char lastPlayed[TRACK_NAME_LEN];
     readLastPlayed(lastPlayed);
@@ -262,7 +262,8 @@ void pickShuffleWav(char* trackName, uint8_t minSizeKb) {
     return;
   }
 
-  uint8_t mask = EEPROM.read(EEPROM_SHUFFLE_MASK_ADDR);
+  uint16_t mask = (uint16_t)EEPROM.read(EEPROM_SHUFFLE_MASK_ADDR) |
+                  ((uint16_t)EEPROM.read(EEPROM_SHUFFLE_MASK_ADDR + 1) << 8);
   if (shuffleAllPlayed(mask, total)) mask = 0;
 
   uint8_t candidateCount = 0;
@@ -275,7 +276,9 @@ void pickShuffleWav(char* trackName, uint8_t minSizeKb) {
   }
 
   fetchFileAtIndex(trackName, selectedIdx, minSizeKb);
-  EEPROM.update(EEPROM_SHUFFLE_MASK_ADDR, shuffleMarkPlayed(mask, selectedIdx));
+  uint16_t newMask = shuffleMarkPlayed(mask, selectedIdx);
+  EEPROM.update(EEPROM_SHUFFLE_MASK_ADDR,     (uint8_t)(newMask & 0xFF));
+  EEPROM.update(EEPROM_SHUFFLE_MASK_ADDR + 1, (uint8_t)(newMask >> 8));
 }
 
 void pickSingleWav(char* trackName, const char* singleTrack) {

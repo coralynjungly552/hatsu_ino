@@ -94,36 +94,41 @@ TEST_CASE("meetsMinSize handles larger thresholds", "[minsize]") {
 // --- shuffle helpers ---
 
 TEST_CASE("shufflePlayed returns false when bit is clear", "[shuffle]") {
-    REQUIRE_FALSE(shufflePlayed(0b00000000, 0));
-    REQUIRE_FALSE(shufflePlayed(0b00000010, 0));
+    REQUIRE_FALSE(shufflePlayed((uint16_t)0x0000, 0));
+    REQUIRE_FALSE(shufflePlayed((uint16_t)0x0002, 0));
 }
 
 TEST_CASE("shufflePlayed returns true when bit is set", "[shuffle]") {
-    REQUIRE(shufflePlayed(0b00000001, 0));
-    REQUIRE(shufflePlayed(0b00000010, 1));
-    REQUIRE(shufflePlayed(0b11111111, 7));
+    REQUIRE(shufflePlayed((uint16_t)0x0001, 0));
+    REQUIRE(shufflePlayed((uint16_t)0x0002, 1));
+    REQUIRE(shufflePlayed((uint16_t)0x00FF, 7));
+    REQUIRE(shufflePlayed((uint16_t)0x8000, 15));
 }
 
 TEST_CASE("shuffleMarkPlayed sets the correct bit", "[shuffle]") {
-    REQUIRE(shuffleMarkPlayed(0, 0) == 0b00000001);
-    REQUIRE(shuffleMarkPlayed(0, 1) == 0b00000010);
-    REQUIRE(shuffleMarkPlayed(0b00000101, 1) == 0b00000111);
+    REQUIRE(shuffleMarkPlayed((uint16_t)0, 0)  == (uint16_t)0x0001);
+    REQUIRE(shuffleMarkPlayed((uint16_t)0, 1)  == (uint16_t)0x0002);
+    REQUIRE(shuffleMarkPlayed((uint16_t)0, 15) == (uint16_t)0x8000);
+    REQUIRE(shuffleMarkPlayed((uint16_t)0x0005, 1) == (uint16_t)0x0007);
 }
 
 TEST_CASE("shuffleAllPlayed returns true when all bits for total are set", "[shuffle]") {
-    REQUIRE(shuffleAllPlayed(0b00000111, 3));
-    REQUIRE(shuffleAllPlayed(0b11111111, 8));
-    REQUIRE(shuffleAllPlayed(0b00000001, 1));
+    REQUIRE(shuffleAllPlayed((uint16_t)0x0007, 3));
+    REQUIRE(shuffleAllPlayed((uint16_t)0x00FF, 8));
+    REQUIRE(shuffleAllPlayed((uint16_t)0x0001, 1));
+    REQUIRE(shuffleAllPlayed((uint16_t)0x01FF, 9));
+    REQUIRE(shuffleAllPlayed((uint16_t)0xFFFF, 16));
 }
 
 TEST_CASE("shuffleAllPlayed returns false when any bit is missing", "[shuffle]") {
-    REQUIRE_FALSE(shuffleAllPlayed(0b00000110, 3)); // index 0 not played
-    REQUIRE_FALSE(shuffleAllPlayed(0b00000000, 3));
+    REQUIRE_FALSE(shuffleAllPlayed((uint16_t)0x0006, 3)); // index 0 not played
+    REQUIRE_FALSE(shuffleAllPlayed((uint16_t)0x0000, 3));
+    REQUIRE_FALSE(shuffleAllPlayed((uint16_t)0x7FFF, 16)); // bit 15 missing
 }
 
 TEST_CASE("shuffleAllPlayed returns false for edge cases", "[shuffle]") {
-    REQUIRE_FALSE(shuffleAllPlayed(0b11111111, 0)); // no tracks
-    REQUIRE_FALSE(shuffleAllPlayed(0b11111111, 9)); // exceeds SHUFFLE_MAX_TRACKS
+    REQUIRE_FALSE(shuffleAllPlayed((uint16_t)0xFFFF, 0));  // no tracks
+    REQUIRE_FALSE(shuffleAllPlayed((uint16_t)0xFFFF, 17)); // exceeds SHUFFLE_MAX_TRACKS
 }
 
 // --- trimRight ---
@@ -156,15 +161,15 @@ TEST_CASE("trimRight does nothing on empty string", "[trimright]") {
 
 TEST_CASE("applyConfigLine REPEAT accepts valid range", "[config]") {
     Config cfg = DEFAULT_CONFIG;
-    REQUIRE(applyConfigLine(cfg, "REPEAT=1"));   REQUIRE(cfg.playCount == 1);
-    REQUIRE(applyConfigLine(cfg, "REPEAT=3"));   REQUIRE(cfg.playCount == 3);
-    REQUIRE(applyConfigLine(cfg, "REPEAT=255")); REQUIRE(cfg.playCount == 255);
+    REQUIRE(applyConfigLine(cfg, "PLAY_COUNT=1"));   REQUIRE(cfg.playCount == 1);
+    REQUIRE(applyConfigLine(cfg, "PLAY_COUNT=3"));   REQUIRE(cfg.playCount == 3);
+    REQUIRE(applyConfigLine(cfg, "PLAY_COUNT=255")); REQUIRE(cfg.playCount == 255);
 }
 
 TEST_CASE("applyConfigLine REPEAT rejects zero and out-of-range", "[config]") {
     Config cfg = DEFAULT_CONFIG;
-    REQUIRE_FALSE(applyConfigLine(cfg, "REPEAT=0"));
-    REQUIRE_FALSE(applyConfigLine(cfg, "REPEAT=256"));
+    REQUIRE_FALSE(applyConfigLine(cfg, "PLAY_COUNT=0"));
+    REQUIRE_FALSE(applyConfigLine(cfg, "PLAY_COUNT=256"));
     REQUIRE(cfg.playCount == 1);
 }
 

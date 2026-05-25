@@ -280,7 +280,7 @@ Place a file named `CONFIG.TXT` in the root of the SD card to customise behaviou
 | `MODE` | `RANDOM` / `SEQUENTIAL` / `SINGLE` | `RANDOM` | Track selection mode |
 | `DELAY` | `0` – `255` | `0` | Seconds to wait after power-up before playing |
 | `MIN_SIZE` | `0` – `255` | `0` | Skip WAV files smaller than N kilobytes (0 = no filter) |
-| `REPEAT` | `1` – `255` | `1` | How many times to play the chosen track before sleeping |
+| `PLAY_COUNT` | `1` – `255` | `1` | How many times to play the chosen track before sleeping |
 | `TRACK` | any valid WAV filename | *(none)* | File to play in `SINGLE` mode |
 
 **Example:**
@@ -294,7 +294,7 @@ MODE=SEQUENTIAL
 
 **MODE=SEQUENTIAL** — plays WAV files in the order the SD card returns them, advancing by one track each ignition cycle. The current position is stored in the Nano's EEPROM so it survives power-off.
 
-**MODE=SHUFFLE** — plays every track exactly once before any track repeats. Played tracks are tracked via an EEPROM bitmask. Once all tracks have been played the cycle resets. Supports up to 8 tracks; if more are present it falls back to RANDOM mode.
+**MODE=SHUFFLE** — plays every track exactly once before any track repeats. Played tracks are tracked via an EEPROM bitmask (2 bytes). Once all tracks have been played the cycle resets. Supports up to 16 tracks; if more are present it falls back to RANDOM mode.
 
 **MODE=SINGLE** — always plays the file specified by `TRACK`. If `TRACK` is not set or the file does not exist on the card, the built-in LED blinks the "no WAV files" error (3 blinks).
 

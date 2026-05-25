@@ -5,7 +5,7 @@
 
 const size_t  TRACK_NAME_LEN     = 13;  // 8.3 format: max 12 chars + null
 const size_t  WAV_HEADER_MIN_SIZE = 12; // RIFF(4) + size(4) + WAVE(4)
-const uint8_t SHUFFLE_MAX_TRACKS  = 8;  // bitmask fits one EEPROM byte
+const uint8_t SHUFFLE_MAX_TRACKS  = 16; // bitmask fits two EEPROM bytes
 
 inline bool isWav(const char* filename) {
   size_t len = strlen(filename);
@@ -30,17 +30,17 @@ inline bool reservoirShouldReplace(uint8_t n, RandomFn randFn) {
 
 // --- Shuffle helpers (EEPROM bitmask, max SHUFFLE_MAX_TRACKS tracks) ---
 
-inline bool shufflePlayed(uint8_t mask, uint8_t index) {
-  return (mask & (uint8_t)(1u << index)) != 0;
+inline bool shufflePlayed(uint16_t mask, uint8_t index) {
+  return (mask & (uint16_t)((uint32_t)1 << index)) != 0;
 }
 
-inline uint8_t shuffleMarkPlayed(uint8_t mask, uint8_t index) {
-  return mask | (uint8_t)(1u << index);
+inline uint16_t shuffleMarkPlayed(uint16_t mask, uint8_t index) {
+  return mask | (uint16_t)((uint32_t)1 << index);
 }
 
-inline bool shuffleAllPlayed(uint8_t mask, uint8_t total) {
+inline bool shuffleAllPlayed(uint16_t mask, uint8_t total) {
   if (total == 0 || total > SHUFFLE_MAX_TRACKS) return false;
-  uint8_t fullMask = (uint8_t)((1u << total) - 1u);
+  uint16_t fullMask = (uint16_t)(((uint32_t)1 << total) - 1);
   return (mask & fullMask) == fullMask;
 }
 
@@ -115,7 +115,7 @@ inline bool applyConfigLine(Config& cfg, const char* line) {
     if (v >= 0 && v <= 255) { cfg.minSizeKb = (uint8_t)v; return true; }
     return false;
   }
-  if (strcasecmp(key, "REPEAT") == 0) {
+  if (strcasecmp(key, "PLAY_COUNT") == 0) {
     int v = atoi(value);
     if (v >= 1 && v <= 255) { cfg.playCount = (uint8_t)v; return true; }
     return false;
