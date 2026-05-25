@@ -281,6 +281,27 @@ TEST_CASE("applyConfigLine TRACK rejects filename that exceeds 8.3 length", "[co
     REQUIRE(cfg.singleTrack[0] == '\0');
 }
 
+TEST_CASE("applyConfigLine rejects non-numeric values for numeric keys", "[config]") {
+    Config cfg = DEFAULT_CONFIG;
+    REQUIRE_FALSE(applyConfigLine(cfg, "VOLUME=abc"));
+    REQUIRE_FALSE(applyConfigLine(cfg, "VOLUME=3x"));
+    REQUIRE_FALSE(applyConfigLine(cfg, "DELAY=abc"));
+    REQUIRE_FALSE(applyConfigLine(cfg, "MIN_SIZE=abc"));
+    REQUIRE_FALSE(applyConfigLine(cfg, "PLAY_COUNT=abc"));
+    REQUIRE(cfg.volume       == 6);
+    REQUIRE(cfg.delaySeconds == 0);
+    REQUIRE(cfg.minSizeKb    == 0);
+    REQUIRE(cfg.playCount    == 1);
+}
+
+TEST_CASE("applyConfigLine rejects empty value for numeric keys", "[config]") {
+    Config cfg = DEFAULT_CONFIG;
+    REQUIRE_FALSE(applyConfigLine(cfg, "VOLUME="));
+    REQUIRE_FALSE(applyConfigLine(cfg, "DELAY="));
+    REQUIRE_FALSE(applyConfigLine(cfg, "MIN_SIZE="));
+    REQUIRE_FALSE(applyConfigLine(cfg, "PLAY_COUNT="));
+}
+
 TEST_CASE("applyConfigLine trims spaces around key and value", "[config]") {
     Config cfg = DEFAULT_CONFIG;
     REQUIRE(applyConfigLine(cfg, "VOLUME = 5 ")); REQUIRE(cfg.volume == 5);

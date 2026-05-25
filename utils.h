@@ -71,6 +71,15 @@ inline void trimRight(char* s, int len) {
   for (int i = len - 1; i >= 0 && s[i] == ' '; i--) s[i] = '\0';
 }
 
+inline bool parseUint8(const char* str, uint8_t* out, uint8_t minVal, uint8_t maxVal) {
+  char* end;
+  long v = strtol(str, &end, 10);
+  if (end == str || *end != '\0') return false;
+  if (v < (long)minVal || v > (long)maxVal) return false;
+  *out = (uint8_t)v;
+  return true;
+}
+
 // Parses "KEY=VALUE" lines; skips blank lines and '#' comments; trims spaces.
 inline bool applyConfigLine(Config& cfg, const char* line) {
   if (!line || line[0] == '#' || line[0] == '\0') return false;
@@ -94,9 +103,7 @@ inline bool applyConfigLine(Config& cfg, const char* line) {
   trimRight(value, (int)strlen(value));
 
   if (strcasecmp(key, "VOLUME") == 0) {
-    int v = atoi(value);
-    if (v >= 0 && v <= 7) { cfg.volume = (uint8_t)v; return true; }
-    return false;
+    return parseUint8(value, &cfg.volume, 0, 7);
   }
   if (strcasecmp(key, "MODE") == 0) {
     if (strcasecmp(value, "RANDOM") == 0)     { cfg.mode = MODE_RANDOM;     return true; }
@@ -106,19 +113,13 @@ inline bool applyConfigLine(Config& cfg, const char* line) {
     return false;
   }
   if (strcasecmp(key, "DELAY") == 0) {
-    int v = atoi(value);
-    if (v >= 0 && v <= 255) { cfg.delaySeconds = (uint8_t)v; return true; }
-    return false;
+    return parseUint8(value, &cfg.delaySeconds, 0, 255);
   }
   if (strcasecmp(key, "MIN_SIZE") == 0) {
-    int v = atoi(value);
-    if (v >= 0 && v <= 255) { cfg.minSizeKb = (uint8_t)v; return true; }
-    return false;
+    return parseUint8(value, &cfg.minSizeKb, 0, 255);
   }
   if (strcasecmp(key, "PLAY_COUNT") == 0) {
-    int v = atoi(value);
-    if (v >= 1 && v <= 255) { cfg.playCount = (uint8_t)v; return true; }
-    return false;
+    return parseUint8(value, &cfg.playCount, 1, 255);
   }
   if (strcasecmp(key, "TRACK") == 0) {
     if (!isWav(value) || strlen(value) >= TRACK_NAME_LEN) return false;
