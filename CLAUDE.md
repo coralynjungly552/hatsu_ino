@@ -9,3 +9,4 @@
 ## Documentation
 
 - After every file edit, review `README.md` and update it if the change affects hardware, wiring, behavior, or setup instructions.
+- After every file edit, review `CONFIG.TXT` and update it if the change adds, removes, or modifies any config key.
