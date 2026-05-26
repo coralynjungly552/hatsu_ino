@@ -3,7 +3,7 @@
 ## Repository layout
 
 Each board version lives entirely under `boards/<version>/`:
-- `logic.h` — pure logic for that board (tested natively, no hardware)
+- `<sketch>/logic.h` — pure logic for that board (tested natively, no hardware; lives inside the sketch folder so Arduino's include path picks it up)
 - `test/` — native test suite for that board
 - `<sketch>/` — Arduino sketch
 - `README.md` — wiring, components, and setup

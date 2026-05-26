@@ -28,7 +28,7 @@ jobs:
 
       - name: Generate coverage report
         run: |
-          gcovr -r . --filter 'boards/v0/logic\.h' --xml coverage.xml --print-summary \
+          gcovr -r . --filter 'boards/v0/hatsu_v0/logic\.h' --xml coverage.xml --print-summary \
             boards/v0/test/native/build
 
       - name: Upload coverage to Codecov
