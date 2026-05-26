@@ -82,7 +82,7 @@ When your car's ignition turns on, hatsu_ino detects the power-up and plays a WA
    │           PAM8403            │                                         │  │
    │                              │                                         │  │
    │  5V+  ◄──── 5V rail          │                                         │  │
-   │  ⏚    ◄──── GND rail         │                                         │  │
+   │  GND  ◄──── GND rail         │                                         │  │
    │                              │                                         │  │
    │  R   ◄──────┐ (optional)     │                                         │  │
    │  L   ◄──────┴──────────────────────────────────────────────────────────┘  │
@@ -103,6 +103,8 @@ When your car's ignition turns on, hatsu_ino detects the power-up and plays a WA
 ```
 
 > The diagram above shows **Option A** (12V → LM2596 → 5V rail). For **Option B**, omit the LM2596 and connect your switched 5V source directly to the 5V rail.
+>
+> On the PAM8403 module, the pin labelled **⏚** (ground symbol, sometimes printed as a `1`) is the audio signal ground — connect it to Arduino GND.
 
 ---
 
