@@ -5,7 +5,7 @@
 #include <avr/sleep.h>
 #include <avr/power.h>
 #include <avr/wdt.h>
-#include "logic.h"
+#include "../../../logic.h"
 
 const uint8_t  SD_CS_PIN               = 4;
 const uint8_t  SPEAKER_PIN             = 9;
