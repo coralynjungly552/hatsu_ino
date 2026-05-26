@@ -45,7 +45,6 @@ void haltWithErrorCode(ErrorCode code) __attribute__((noreturn));
 
 void setup() {
   wdt_disable();
-  Serial.begin(115200);
   initStatusLed();
 
   if (EEPROM.read(EEPROM_WDT_CRASH_ADDR) == WDT_CRASH_MAGIC) {
@@ -67,25 +66,13 @@ void setup() {
 
   char trackName[TRACK_NAME_LEN];
   pickWav(trackName, cfg);
-  Serial.print(F("track: ")); Serial.println(trackName); Serial.flush();
   validateWavFile(trackName);
   copyTrackName(currentTrack, trackName);
 
   configureAndPlay(trackName, cfg.volume);
-  Serial.println(F("playing")); Serial.flush();
 }
 
 void loop() {
-  static unsigned long lastPrint = 0;
-  if (millis() - lastPrint > 1000) {
-    uint16_t ocr, icr;
-    noInterrupts(); ocr = OCR1A; icr = ICR1; interrupts();
-    Serial.print(F("isPlaying=")); Serial.print(player.isPlaying());
-    Serial.print(F(" TCCR1A=0x")); Serial.print(TCCR1A, HEX);
-    Serial.print(F(" ICR1=")); Serial.print(icr);
-    Serial.print(F(" OCR1A=")); Serial.println(ocr); Serial.flush();
-    lastPrint = millis();
-  }
   if (player.isPlaying()) {
     wasPlaying = true;
     digitalWrite(LED_BUILTIN, (millis() % 1000UL < 100UL) ? HIGH : LOW);
