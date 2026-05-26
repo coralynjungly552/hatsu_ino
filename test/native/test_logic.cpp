@@ -217,14 +217,16 @@ TEST_CASE("applyConfigLine VOLUME accepts valid range", "[config]") {
     Config cfg = DEFAULT_CONFIG;
     REQUIRE(applyConfigLine(cfg, "VOLUME=0")); REQUIRE(cfg.volume == 0);
     REQUIRE(applyConfigLine(cfg, "VOLUME=3")); REQUIRE(cfg.volume == 3);
-    REQUIRE(applyConfigLine(cfg, "VOLUME=7")); REQUIRE(cfg.volume == 7);
+    REQUIRE(applyConfigLine(cfg, "VOLUME=4")); REQUIRE(cfg.volume == 4);
 }
 
 TEST_CASE("applyConfigLine VOLUME rejects out-of-range values", "[config]") {
     Config cfg = DEFAULT_CONFIG;
-    cfg.volume = 6;
+    cfg.volume = 3;
+    REQUIRE_FALSE(applyConfigLine(cfg, "VOLUME=5"));
+    REQUIRE_FALSE(applyConfigLine(cfg, "VOLUME=7"));
     REQUIRE_FALSE(applyConfigLine(cfg, "VOLUME=8"));
-    REQUIRE(cfg.volume == 6);
+    REQUIRE(cfg.volume == 3);
 }
 
 TEST_CASE("applyConfigLine VOLUME is case-insensitive on key", "[config]") {
@@ -288,7 +290,7 @@ TEST_CASE("applyConfigLine rejects non-numeric values for numeric keys", "[confi
     REQUIRE_FALSE(applyConfigLine(cfg, "DELAY=abc"));
     REQUIRE_FALSE(applyConfigLine(cfg, "MIN_SIZE=abc"));
     REQUIRE_FALSE(applyConfigLine(cfg, "PLAY_COUNT=abc"));
-    REQUIRE(cfg.volume       == 6);
+    REQUIRE(cfg.volume       == 4);
     REQUIRE(cfg.delaySeconds == 0);
     REQUIRE(cfg.minSizeKb    == 0);
     REQUIRE(cfg.playCount    == 1);
@@ -304,7 +306,7 @@ TEST_CASE("applyConfigLine rejects empty value for numeric keys", "[config]") {
 
 TEST_CASE("applyConfigLine trims spaces around key and value", "[config]") {
     Config cfg = DEFAULT_CONFIG;
-    REQUIRE(applyConfigLine(cfg, "VOLUME = 5 ")); REQUIRE(cfg.volume == 5);
+    REQUIRE(applyConfigLine(cfg, "VOLUME = 4 ")); REQUIRE(cfg.volume == 4);
     REQUIRE(applyConfigLine(cfg, "MODE = SEQUENTIAL ")); REQUIRE(cfg.mode == MODE_SEQUENTIAL);
 }
 

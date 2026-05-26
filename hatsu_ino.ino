@@ -4,6 +4,7 @@
 #include <EEPROM.h>
 #include <avr/sleep.h>
 #include <avr/power.h>
+#include <avr/wdt.h>
 #include "logic.h"
 
 const uint8_t  SD_CS_PIN               = 4;
@@ -12,6 +13,9 @@ const int      NOISE_PIN               = A0;   // intentionally unconnected — 
 const uint8_t  EEPROM_SEQ_INDEX_ADDR   = 0;    // sequential mode: play index (1 byte)
 const uint8_t  EEPROM_LAST_PLAYED_ADDR = 1;    // random mode: last played filename (TRACK_NAME_LEN bytes)
 const uint8_t  EEPROM_SHUFFLE_MASK_ADDR = (uint8_t)(EEPROM_LAST_PLAYED_ADDR + TRACK_NAME_LEN); // shuffle mode: bitmask (2 bytes, addr 14–15)
+const uint8_t  EEPROM_WDT_CRASH_ADDR   = (uint8_t)(EEPROM_SHUFFLE_MASK_ADDR + 2); // WDT crash flag (1 byte, addr 16)
+
+const uint8_t  WDT_CRASH_MAGIC         = 0xAB;
 
 const uint8_t      SD_INIT_RETRIES       = 3;
 const unsigned long SD_RETRY_DELAY_MS    = 500;
@@ -40,9 +44,21 @@ void enterPowerDownSleep() __attribute__((noreturn));
 void haltWithErrorCode(ErrorCode code) __attribute__((noreturn));
 
 void setup() {
+  wdt_disable();
+  Serial.begin(115200);
   initStatusLed();
+
+  if (EEPROM.read(EEPROM_WDT_CRASH_ADDR) == WDT_CRASH_MAGIC) {
+    EEPROM.update(EEPROM_WDT_CRASH_ADDR, 0);
+    haltWithErrorCode(SD_INIT_FAILED);
+  }
+
   seedRandom();
+  EEPROM.update(EEPROM_WDT_CRASH_ADDR, WDT_CRASH_MAGIC);
+  wdt_enable(WDTO_4S);
   initSD();
+  wdt_disable();
+  EEPROM.update(EEPROM_WDT_CRASH_ADDR, 0);
 
   Config cfg = loadConfig();
   playsTarget = cfg.playCount;
@@ -51,13 +67,25 @@ void setup() {
 
   char trackName[TRACK_NAME_LEN];
   pickWav(trackName, cfg);
+  Serial.print(F("track: ")); Serial.println(trackName); Serial.flush();
   validateWavFile(trackName);
   copyTrackName(currentTrack, trackName);
 
   configureAndPlay(trackName, cfg.volume);
+  Serial.println(F("playing")); Serial.flush();
 }
 
 void loop() {
+  static unsigned long lastPrint = 0;
+  if (millis() - lastPrint > 1000) {
+    uint16_t ocr, icr;
+    noInterrupts(); ocr = OCR1A; icr = ICR1; interrupts();
+    Serial.print(F("isPlaying=")); Serial.print(player.isPlaying());
+    Serial.print(F(" TCCR1A=0x")); Serial.print(TCCR1A, HEX);
+    Serial.print(F(" ICR1=")); Serial.print(icr);
+    Serial.print(F(" OCR1A=")); Serial.println(ocr); Serial.flush();
+    lastPrint = millis();
+  }
   if (player.isPlaying()) {
     wasPlaying = true;
     digitalWrite(LED_BUILTIN, (millis() % 1000UL < 100UL) ? HIGH : LOW);
@@ -288,17 +316,19 @@ void pickSingleWav(char* trackName, const char* singleTrack) {
 
 void configureAndPlay(const char* trackName, uint8_t volume) {
   player.speakerPin = SPEAKER_PIN;
-  player.volume(0);
+  player.setVolume(0);
   player.play(trackName);
   for (uint8_t v = 1; v <= volume; v++) {
     delay(FADE_STEP_MS);
-    player.volume(v);
+    player.setVolume(v);
   }
   playbackDeadline = millis() + PLAYBACK_WATCHDOG_MS;
 }
 
 // ~20mA active → ~0.1µA in power-down. Wakes on next ignition power cycle.
 void enterPowerDownSleep() {
+  player.disable();
+  digitalWrite(SPEAKER_PIN, LOW);
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
   sleep_enable();
   power_all_disable();
@@ -307,6 +337,8 @@ void enterPowerDownSleep() {
 }
 
 void haltWithErrorCode(ErrorCode code) {
+  wdt_disable();
+  EEPROM.update(EEPROM_WDT_CRASH_ADDR, 0);
   for (uint8_t cycle = 0; cycle < ERROR_BLINK_CYCLES; cycle++) {
     for (uint8_t i = 0; i < (uint8_t)code; i++) {
       digitalWrite(LED_BUILTIN, HIGH);

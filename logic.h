@@ -60,7 +60,7 @@ struct Config {
   uint8_t playCount;    // total times to play the chosen track (minimum 1)
 };
 
-static const Config DEFAULT_CONFIG = {6, MODE_RANDOM, "", 0, 0, 1};
+static const Config DEFAULT_CONFIG = {4, MODE_RANDOM, "", 0, 0, 1};
 
 inline void copyTrackName(char* dst, const char* src) {
   strncpy(dst, src, TRACK_NAME_LEN - 1);
@@ -103,7 +103,7 @@ inline bool applyConfigLine(Config& cfg, const char* line) {
   trimRight(value, (int)strlen(value));
 
   if (strcasecmp(key, "VOLUME") == 0) {
-    return parseUint8(value, &cfg.volume, 0, 7);
+    return parseUint8(value, &cfg.volume, 0, 4);
   }
   if (strcasecmp(key, "MODE") == 0) {
     if (strcasecmp(value, "RANDOM") == 0)     { cfg.mode = MODE_RANDOM;     return true; }

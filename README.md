@@ -5,8 +5,6 @@
 [![Arduino Build](https://github.com/ArturVRSampaio/hatsu_ino/actions/workflows/arduino-build.yml/badge.svg)](https://github.com/ArturVRSampaio/hatsu_ino/actions/workflows/arduino-build.yml)
 [![Coverage](https://codecov.io/gh/ArturVRSampaio/hatsu_ino/branch/master/graph/badge.svg)](https://codecov.io/gh/ArturVRSampaio/hatsu_ino)
 
-> ⚠️ **Work in progress — not yet validated on real hardware.**
-
 > **hatsu** (初, first sound) + **ino** (Arduino) — the first sound your car makes.
 
 A JDM car melody box that plays a WAV audio file when you start your car.
@@ -77,23 +75,31 @@ When your car's ignition turns on, hatsu_ino detects the power-up and plays a WA
    │  D13 ──────────────────────────────────► SCK                     │
    │                              │        └──────────────────────────┘
    │  D9  ──── [+ 10µF ─] ─────────────────────────────────────────────────────┐
-   │  GND ─────────────────────────────────────────────────────────────────┐   │
-   └──────────────────────────────┘                                        │   │
-                                                                           │   │
-   ┌──────────────────────────────┐                                        │   │
-   │           PAM8403            │                                        │   │
-   │                              │                                        │   │
-   │  VCC  ◄──── 5V rail          │                                        │   │
-   │  GND  ◄──── GND rail         │                                        │   │
-   │                              │                                        │   │
-   │  L_IN+ ◄──────────────────────────────────────────────────────────────┘   │
-   │  L_IN─ ◄──────────────────────────────────────────────────────────────────┘
+   │  GND ──────────────────────────────────────────────────────────────────┐  │
+   └──────────────────────────────┘                                         │  │
+                                                                            │  │
+   ┌──────────────────────────────┐                                         │  │
+   │           PAM8403            │                                         │  │
+   │                              │                                         │  │
+   │  5V+  ◄──── 5V rail          │                                         │  │
+   │  ⏚    ◄──── GND rail         │                                         │  │
+   │                              │                                         │  │
+   │  R   ◄──────┐ (optional)     │                                         │  │
+   │  L   ◄──────┴──────────────────────────────────────────────────────────┘  │
+   │  5V─ ◄────────────────────────────────────── GND rail ────────────────────┘
    │                              │                                ┌──────────────────┐
    │                              │                                │     SPEAKER      │
    │                              │                                │                  │
-   │  L_OUT+ ──────────────────────────────────────────────────────────► POSITIVE     │
-   │  L_OUT─ ──────────────────────────────────────────────────────────► NEGATIVE     │
-   └──────────────────────────────┘                                └──────────────────┘
+   │  L+  ──────────────────────────────────────────────────────────────► POSITIVE    │
+   │  L─  ──────────────────────────────────────────────────────────────► NEGATIVE    │
+   │                              │      ┌──────────────────┐      └──────────────────┘
+   │                              │      │     SPEAKER      │
+   │  (optional)                  │      │                  │
+   │  R─  ────────────────────────────────────► POSITIVE    │
+   │  R+  ────────────────────────────────────► NEGATIVE    │
+   │                              │      └──────────────────┘
+   └──────────────────────────────┘                          
+
 ```
 
 > The diagram above shows **Option A** (12V → LM2596 → 5V rail). For **Option B**, omit the LM2596 and connect your switched 5V source directly to the 5V rail.
@@ -169,10 +175,14 @@ The 10µF capacitor sits between D9 and the amplifier to block the DC offset fro
 | From | To |
 |---|---|
 | Nano **D9** | Capacitor **+** leg |
-| Capacitor **−** leg | PAM8403 **L_IN+** |
-| Nano **GND** | PAM8403 **L_IN−** |
-| PAM8403 **L_OUT+** | Speaker **(+)** |
-| PAM8403 **L_OUT−** | Speaker **(−)** |
+| Capacitor **−** leg | PAM8403 **L** |
+| Nano **GND** | PAM8403 **⏚** |
+| Nano **GND** | PAM8403 **5V−** |
+| PAM8403 **5V+** | 5V rail |
+| PAM8403 **L+** | Speaker **(+)** |
+| PAM8403 **L−** | Speaker **(−)** |
+
+> Pin **⏚** is the audio signal ground — connect it to Arduino GND. Pin **B** is the right channel input — leave it unconnected when using only the left channel.
 
 ---
 
@@ -182,16 +192,16 @@ The 10µF capacitor sits between D9 and the amplifier to block the DC offset fro
 |---|---|---|
 | 12V power *(Option A)* | Car 12V+ | LM2596 IN+ |
 | GND *(Option A)* | Car GND | LM2596 IN− |
-| 5V rail *(Option A)* | LM2596 OUT+ | Nano 5V, SD VCC, PAM8403 VCC |
-| 5V rail *(Option B)* | 5V source + | Nano 5V, SD VCC, PAM8403 VCC |
-| GND rail | LM2596 OUT− or 5V source − | Nano GND, SD GND, PAM8403 GND |
+| 5V rail *(Option A)* | LM2596 OUT+ | Nano 5V, SD VCC, PAM8403 5V+ |
+| 5V rail *(Option B)* | 5V source + | Nano 5V, SD VCC, PAM8403 5V+ |
+| GND rail | LM2596 OUT− or 5V source − | Nano GND, SD GND, PAM8403 5V− |
 | SPI CS | Nano D4 | SD CS |
 | SPI MOSI | Nano D11 | SD MOSI |
 | SPI MISO | Nano D12 | SD MISO |
 | SPI SCK | Nano D13 | SD SCK |
-| Audio | Nano D9 | 10µF cap (+) → cap (−) → PAM8403 L_IN+ |
-| Audio GND | Nano GND | PAM8403 L_IN− |
-| Speaker | PAM8403 L_OUT+ / L_OUT− | Speaker + / − |
+| Audio | Nano D9 | 10µF cap (+) → cap (−) → PAM8403 L |
+| Audio GND | Nano GND | PAM8403 ⏚ and PAM8403 5V− |
+| Speaker | PAM8403 L+ / L− | Speaker + / − |
 
 ## Uploading the firmware
 
@@ -242,7 +252,7 @@ Click **Upload** (→ arrow button). The IDE will compile and flash the sketch. 
 2. Copy any `.wav` files to the root directory
 3. Optionally create a `CONFIG.TXT` to customize behaviour (see below)
 4. On error, the built-in LED blinks the error code 3 times then the device enters deep sleep to prevent battery drain:
-   - **2 blinks** = SD card failed to initialize after 3 retries (check wiring or reformat)
+   - **2 blinks** = SD card failed to initialize — either failed after 3 retries or hung the SPI bus (check wiring, reformat, or try a different card)
    - **3 blinks** = no `.wav` files found, file missing, or invalid WAV format
    - **4 blinks** = SD root directory failed to open (try reformatting)
    - **5 blinks** = playback watchdog — track was selected but never started playing
@@ -285,7 +295,7 @@ Place a file named `CONFIG.TXT` in the root of the SD card to customise behaviou
 
 | Key | Values | Default | Description |
 |---|---|---|---|
-| `VOLUME` | `0` – `7` | `6` | Playback volume (0 = silent, 7 = max) |
+| `VOLUME` | `0` – `4` | `4` | Playback volume (0 = silent, 4 = max). Values above 4 overflow the PWM timer and cause no audio output. |
 | `MODE` | `RANDOM` / `SEQUENTIAL` / `SINGLE` | `RANDOM` | Track selection mode |
 | `DELAY` | `0` – `255` | `0` | Seconds to wait after power-up before playing |
 | `MIN_SIZE` | `0` – `255` | `0` | Skip WAV files smaller than N kilobytes (0 = no filter) |
