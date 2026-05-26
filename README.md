@@ -4,6 +4,7 @@
 [![Unit Tests](https://github.com/ArturVRSampaio/hatsu_ino/actions/workflows/native-tests.yml/badge.svg)](https://github.com/ArturVRSampaio/hatsu_ino/actions/workflows/native-tests.yml)
 [![Arduino Build](https://github.com/ArturVRSampaio/hatsu_ino/actions/workflows/arduino-build.yml/badge.svg)](https://github.com/ArturVRSampaio/hatsu_ino/actions/workflows/arduino-build.yml)
 [![Coverage](https://codecov.io/gh/ArturVRSampaio/hatsu_ino/branch/master/graph/badge.svg)](https://codecov.io/gh/ArturVRSampaio/hatsu_ino)
+[![Deploy Docs](https://github.com/ArturVRSampaio/hatsu_ino/actions/workflows/pages.yml/badge.svg)](https://github.com/ArturVRSampaio/hatsu_ino/actions/workflows/pages.yml)
 
 > **hatsu** (初, first sound) + **ino** (Arduino) — the first sound your car makes.
 
