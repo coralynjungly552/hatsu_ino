@@ -11,25 +11,25 @@ jobs:
       - name: Cache Catch2
         uses: actions/cache@v4
         with:
-          path: test/native/build/_deps
+          path: boards/v0/test/native/build/_deps
           key: catch2-v3.5.4-${{ runner.os }}
 
       - name: Install gcovr
         run: pip install gcovr
 
       - name: Configure
-        run: cmake -S test/native -B test/native/build -DCOVERAGE=ON
+        run: cmake -S boards/v0/test/native -B boards/v0/test/native/build -DCOVERAGE=ON
 
       - name: Build
-        run: cmake --build test/native/build
+        run: cmake --build boards/v0/test/native/build
 
       - name: Run tests
-        run: ./test/native/build/tests
+        run: ./boards/v0/test/native/build/tests
 
       - name: Generate coverage report
         run: |
-          gcovr -r . --filter 'logic\.h' --xml coverage.xml --print-summary \
-            test/native/build
+          gcovr -r . --filter 'boards/v0/logic\.h' --xml coverage.xml --print-summary \
+            boards/v0/test/native/build
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

@@ -19,4 +19,4 @@ jobs:
             --error-exitcode=1 \
             --suppress=missingIncludeSystem \
             --suppress=unusedFunction \
-            boards/v0/hatsu_v0/hatsu_v0.ino logic.h
+            boards/v0/hatsu_v0/hatsu_v0.ino boards/v0/logic.h

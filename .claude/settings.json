@@ -10,7 +10,7 @@
           },
           {
             "type": "command",
-            "command": "bash -c '[ -d test/native/build ] || cmake -S test/native -B test/native/build 2>&1; cmake --build test/native/build 2>&1 && ./test/native/build/tests 2>&1' | jq -Rs '{hookSpecificOutput: {hookEventName: \"PostToolUse\", additionalContext: (\"Test results after edit:\\n\" + .)}}'"
+            "command": "bash -c '[ -d boards/v0/test/native/build ] || cmake -S boards/v0/test/native -B boards/v0/test/native/build 2>&1; cmake --build boards/v0/test/native/build 2>&1 && ./boards/v0/test/native/build/tests 2>&1' | jq -Rs '{hookSpecificOutput: {hookEventName: \"PostToolUse\", additionalContext: (\"Test results after edit:\\n\" + .)}}'"
           }
         ]
       }
