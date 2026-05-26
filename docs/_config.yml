@@ -1,0 +1,16 @@
+title: hatsu_ino
+description: Arduino-based JDM car melody box that plays a random WAV file on ignition startup
+baseurl: "/hatsu_ino"
+url: "https://arturvrsampaio.github.io"
+
+remote_theme: just-the-docs/just-the-docs@v0.10.0
+
+plugins:
+  - jekyll-remote-theme
+
+color_scheme: dark
+search_enabled: true
+
+nav_external_links:
+  - title: GitHub
+    url: https://github.com/ArturVRSampaio/hatsu_ino
