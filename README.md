@@ -15,9 +15,9 @@ A JDM car melody box that plays a WAV audio file when you start your car.
 ```
 boards/
   v0/
-    logic.h      # board logic (tested natively, no hardware dependency)
-    test/        # native unit test suite (Catch2 + CMake)
     hatsu_v0/    # Arduino sketch
+      logic.h    # board logic (tested natively, no hardware dependency)
+    test/        # native unit test suite (Catch2 + CMake)
     README.md    # wiring, components, and setup for v0
     CONFIG.TXT   # example SD card config file for v0
 ```
@@ -33,9 +33,9 @@ boards/
 ### Native tests
 
 ```bash
-cmake -S test/native -B test/native/build
-cmake --build test/native/build
-./test/native/build/tests
+cmake -S boards/v0/test/native -B boards/v0/test/native/build
+cmake --build boards/v0/test/native/build
+./boards/v0/test/native/build/tests
 ```
 
 ### Arduino build
