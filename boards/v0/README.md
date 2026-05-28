@@ -75,19 +75,17 @@ When your car's ignition turns on, hatsu_ino detects the power-up and plays a WA
    │  D12 ◄─────────────────────────────────  MISO                    │
    │  D13 ──────────────────────────────────► SCK                     │
    │                              │        └──────────────────────────┘
-   │  D9  ──── [+ 10µF ─] ─────────────────────────────────────────────────────┐
-   │  GND ──────────────────────────────────────────────────────────────────┐  │
-   └──────────────────────────────┘                                         │  │
-                                                                            │  │
-   ┌──────────────────────────────┐                                         │  │
-   │           PAM8403            │                                         │  │
-   │                              │                                         │  │
-   │  5V+  ◄──── 5V rail          │                                         │  │
-   │  GND  ◄──── GND rail         │                                         │  │
-   │                              │                                         │  │
-   │  R   ◄──────┐ (optional)     │                                         │  │
-   │  L   ◄──────┴──────────────────────────────────────────────────────────┘  │
-   │  5V─ ◄────────────────────────────────────── GND rail ────────────────────┘
+   │  D9  ──── [+ 10µF ─] ──────────────────────────────────────────────────┐
+   └──────────────────────────────┘                                         │
+                                                                            │
+   ┌──────────────────────────────┐                                         │
+   │           PAM8403            │                                         │
+   │                              │                                         │
+   │  5V+  ◄──── 5V rail          │                                         │
+   │  GND  ◄──── GND rail         │                                         │
+   │                              │                                         │
+   │  R   ◄──────┐ (optional)     │                                         │
+   │  L   ◄──────┴──────────────────────────────────────────────────────────┘
    │                              │                                ┌──────────────────┐
    │                              │                                │     SPEAKER      │
    │                              │                                │                  │
@@ -298,7 +296,7 @@ Place a file named `CONFIG.TXT` in the root of the SD card to customise behaviou
 
 | Key | Values | Default | Description |
 |---|---|---|---|
-| `VOLUME` | `0` – `4` | `4` | Playback volume (0 = silent, 4 = max). Values above 4 overflow the PWM timer and cause no audio output. |
+| `VOLUME` | `0` – `6` | `4` | Playback volume. 4 = unity gain. 5–6 = boosted (each step doubles the PWM swing). **Set to 6 when using the PAM8403** — at lower values the PWM average is too low to bias the amplifier input correctly. Values above 6 overflow the PWM timer and cause no audio output. |
 | `MODE` | `RANDOM` / `SEQUENTIAL` / `SINGLE` | `RANDOM` | Track selection mode |
 | `DELAY` | `0` – `255` | `0` | Seconds to wait after power-up before playing |
 | `MIN_SIZE` | `0` – `255` | `0` | Skip WAV files smaller than N kilobytes (0 = no filter) |
